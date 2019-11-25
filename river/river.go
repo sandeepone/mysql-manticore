@@ -281,7 +281,8 @@ func (r *River) initMasterState() (err error) {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	r.l.Infof("master state: %s", m.String())
+
+	// r.l.Infof("master state: %s", m.String())
 	if m.needPositionReset || (m.useGTID && m.gtid == nil) || m.pos == nil {
 		r.l.Infof("resetting master state to the current upstream position")
 		err = m.resetToCurrent(r.canal)

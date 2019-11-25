@@ -27,6 +27,7 @@ type masterState struct {
 	useGTID           bool
 	needPositionReset bool
 	lastSaveTime      time.Time
+	savePosToFile     bool
 }
 
 type positionData struct {
@@ -44,7 +45,7 @@ type MysqlPositionProvider interface {
 
 // newMasterState master state constructor
 func newMasterState(c *Config) *masterState {
-	var m = &masterState{useGTID: c.UseGTID, flavor: c.Flavor}
+	var m = &masterState{useGTID: c.UseGTID, flavor: c.Flavor, savePosToFile: c.SavePosToFile}
 	if c.DataDir != "" {
 		m.dataDir = c.DataDir
 		m.filePath = path.Join(c.DataDir, "master.info")
@@ -57,6 +58,11 @@ func (m *masterState) load() (err error) {
 
 	if m.dataDir == "" {
 		log.Info("skipped loading master info: no data dir specified")
+		return nil
+	}
+
+	if !m.savePosToFile {
+		log.Info("skipped loading master info from file: disabled in config")
 		return nil
 	}
 
@@ -102,6 +108,11 @@ func (m *masterState) load() (err error) {
 func (m *masterState) save() error {
 	m.Lock()
 	defer m.Unlock()
+
+	if !m.savePosToFile {
+		// log.Info("skipped saving position to file: disabled in config")
+		return nil
+	}
 
 	if len(m.dataDir) == 0 {
 		log.Infof("skipped saving position (no data dir specified)")

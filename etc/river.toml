@@ -46,6 +46,9 @@ replay_full_binlog = false
 
 use_gtid = true
 
+# Save the master position info to file in data_dir.
+save_pos_to_file = false
+
 [sph_conn_settings]
   disconnect_retry_delay = "1s"
   overload_retry_delay = "1m"
@@ -126,6 +129,9 @@ use_gtid = true
   table = "test.vacancy_catalogue"
   id_field = "vacancy_id"
   index = "vacancy"
+  # json_column_name = "data"
+  # json_type_name = "type"
+  # json_type_value = 3
   [ingest.column_map]
     catalogue_id = [ "catalogues", "catalogues_top" ]
 

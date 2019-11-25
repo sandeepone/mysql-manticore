@@ -154,6 +154,8 @@ type Config struct {
 	ReplayFullBinlog bool `toml:"replay_full_binlog"`
 
 	UseGTID bool `toml:"use_gtid"`
+
+	SavePosToFile bool `toml:"save_pos_to_file"`
 }
 
 // IndexMysqlSettings settings for connection to mysql from indexer
