@@ -10,9 +10,9 @@ import (
 
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/sphinx"
 	"github.com/satori/go.uuid"
 	"github.com/siddontang/go-mysql/canal"
-	"github.com/superjobru/go-mysql-sphinx/sphinx"
 	"github.com/thejerf/suture"
 	"gopkg.in/birkirb/loggers.v1"
 	"gopkg.in/birkirb/loggers.v1/log"

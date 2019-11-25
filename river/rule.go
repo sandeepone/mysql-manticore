@@ -2,13 +2,12 @@ package river
 
 import (
 	"encoding/json"
-	// "fmt"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/canal"
-	"github.com/superjobru/go-mysql-sphinx/util"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 

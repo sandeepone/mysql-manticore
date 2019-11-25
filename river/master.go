@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superjobru/go-mysql-sphinx/sphinx"
+	"github.com/sandeepone/mysql-manticore/sphinx"
 
 	"github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"

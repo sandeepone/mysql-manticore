@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/sphinx"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/mysql"
-	"github.com/superjobru/go-mysql-sphinx/sphinx"
-	"github.com/superjobru/go-mysql-sphinx/util"
 )
 
 func getDBValueExpression(result *mysql.Result, fieldType string, rowNo int, colNo int) (string, error) {

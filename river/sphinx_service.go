@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/sphinx"
 	"github.com/siddontang/go/sync2"
-	"github.com/superjobru/go-mysql-sphinx/sphinx"
 	"gopkg.in/birkirb/loggers.v1"
 	"gopkg.in/birkirb/loggers.v1/log"
 )

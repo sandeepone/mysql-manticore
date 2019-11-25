@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/superjobru/go-mysql-sphinx/river"
+	"github.com/sandeepone/mysql-manticore/river"
 	"github.com/thejerf/suture"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
@@ -30,7 +30,7 @@ func (s *strList) Set(value string) error {
 }
 
 func getVersion() string {
-	return fmt.Sprintf("go-mysql-sphinx %s ; go runtime %s", version, runtime.Version())
+	return fmt.Sprintf("mysql-manticore %s ; go runtime %s", version, runtime.Version())
 }
 
 func run() (err error) {
@@ -50,7 +50,7 @@ func run() (err error) {
 	flags.StringVar(&configFile, "config", "../../temp/etc/river.toml", "config file")
 	flags.StringVar(&dataDir, "data-dir", "../../temp/data", "directory for storing local application state")
 	flags.StringVar(&myAddr, "my-addr", "", "MySQL replica address")
-	flags.Var(&sphAddr, "sph-addr", "Sphinx address")
+	flags.Var(&sphAddr, "sph-addr", "Manticore address")
 	flags.StringVar(&logLevel, "log-level", "info", "log level")
 	flags.StringVar(&logFile, "log-file", "", "log file; will log to stdout if empty")
 	flags.BoolVar(&rebuildAndExit, "rebuild-and-exit", false, "rebuild all configured indexes and exit")

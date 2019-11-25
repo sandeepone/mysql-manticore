@@ -12,7 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
-	"github.com/superjobru/go-mysql-sphinx/util"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/xwb1989/sqlparser"
 	"github.com/xwb1989/sqlparser/dependency/querypb"
 	"github.com/xwb1989/sqlparser/dependency/sqltypes"

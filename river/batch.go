@@ -6,8 +6,8 @@ import (
 
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/mysql"
-	"github.com/superjobru/go-mysql-sphinx/util"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 

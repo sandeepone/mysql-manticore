@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/superjobru/go-mysql-sphinx/sphinx"
+	"github.com/sandeepone/mysql-manticore/sphinx"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 

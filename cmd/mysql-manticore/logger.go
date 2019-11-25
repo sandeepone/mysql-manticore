@@ -6,8 +6,8 @@ import (
 
 	mapper "github.com/birkirb/loggers-mapper-logrus"
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/sirupsen/logrus"
-	"github.com/superjobru/go-mysql-sphinx/util"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 

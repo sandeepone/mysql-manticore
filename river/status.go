@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/mysql"
 	"github.com/siddontang/go/sync2"
-	"github.com/superjobru/go-mysql-sphinx/util"
 	"gopkg.in/birkirb/loggers.v1"
 )
 

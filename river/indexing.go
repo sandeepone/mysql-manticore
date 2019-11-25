@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/siddontang/go-mysql/canal"
-	"github.com/siddontang/go-mysql/mysql"
 	"io"
 	"io/ioutil"
 	"os"
@@ -15,10 +13,13 @@ import (
 	"syscall"
 	"text/template"
 
+	"github.com/siddontang/go-mysql/canal"
+	"github.com/siddontang/go-mysql/mysql"
+
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
+	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/satori/go.uuid"
-	"github.com/superjobru/go-mysql-sphinx/util"
 	"gopkg.in/birkirb/loggers.v1"
 )
 

@@ -1,4 +1,4 @@
-module github.com/superjobru/go-mysql-sphinx
+module github.com/sandeepone/mysql-manticore
 
 go 1.13
 

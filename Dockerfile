@@ -10,22 +10,19 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
-RUN curl -fsSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && chmod +x /usr/local/bin/dep
-RUN mkdir -p /go/src/github.com/superjobru/go-mysql-sphinx
-WORKDIR /go/src/github.com/superjobru/go-mysql-sphinx
-#COPY Gopkg.lock Gopkg.toml ./
-#RUN dep ensure -vendor-only
+RUN mkdir -p /go/src/github.com/sandeepone/mysql-manticore
+WORKDIR /go/src/github.com/sandeepone/mysql-manticore
 COPY . .
 RUN make
 
 FROM debian:stretch-slim
 RUN apt-get update && apt-get install -y default-libmysqlclient-dev rsync
-COPY --from=builder /go/src/github.com/superjobru/go-mysql-sphinx/bin/go-mysql-sphinx /usr/local/bin/
+COPY --from=builder /go/src/github.com/sandeepone/mysql-manticore/bin/mysql-manticore /usr/local/bin/
 COPY --from=builder /usr/local/bin/dockerize /usr/local/bin/
 COPY --from=builder /opt/sphinx/sphinx-3.1.1/bin/indexer /usr/local/bin/
-COPY etc/river.toml /etc/go-mysql-sphinx/river.toml
-COPY etc/dict /etc/go-mysql-sphinx/dict
+COPY etc/river.toml /etc/mysql-manticore/river.toml
+COPY etc/dict /etc/mysql-manticore/dict
 RUN mkdir -p /var/river
 VOLUME /var/river
 
-CMD dockerize -wait tcp://mysql:3306 -timeout 120s /usr/local/bin/go-mysql-sphinx -config /etc/go-mysql-sphinx/river.toml -data-dir /var/river -my-addr mysql:3306 -sph-addr sphinx:9308
+CMD dockerize -wait tcp://mysql:3306 -timeout 120s /usr/local/bin/mysql-manticore -config /etc/mysql-manticore/river.toml -data-dir /var/river -my-addr mysql:3306 -sph-addr sphinx:9308

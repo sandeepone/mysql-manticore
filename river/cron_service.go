@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/robfig/cron"
-	"github.com/superjobru/go-mysql-sphinx/util"
+	"github.com/sandeepone/mysql-manticore/util"
 	"gopkg.in/birkirb/loggers.v1"
 )
 
