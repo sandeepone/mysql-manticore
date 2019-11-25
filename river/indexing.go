@@ -491,6 +491,7 @@ func rebuildIndexGroup(ctx context.Context, r *River, build indexGroupBuild) err
 		return errors.Annotate(err, "pausing canal updates failed")
 	}
 
+	// Skip upload
 	if !r.c.SkipUploadIndex {
 		err = buildAndUploadIndexGroup(ctx, r.c, build)
 		if err != nil {
@@ -501,6 +502,7 @@ func rebuildIndexGroup(ctx context.Context, r *River, build indexGroupBuild) err
 
 	r.stopSyncRoutine()
 
+	// Skip reload
 	if !r.c.SkipReloadRtIndex {
 		err = r.sphinxService.ReloadRtIndex(build)
 		if err != nil {

@@ -386,6 +386,7 @@ func (r *River) checkAllIndexesForOptimize() {
 // rebuildAll rebuilds all configured indexes
 func (r *River) rebuildAll(ctx context.Context, reason string) error {
 	if r.c.SkipRebuild {
+		r.l.Info("use skip_rebuild option, skipped rebuild indexes")
 		return nil
 	}
 
@@ -400,7 +401,7 @@ func (r *River) rebuildAll(ctx context.Context, reason string) error {
 
 func (r *River) rebuildIfNotReady(ctx context.Context) error {
 	if r.c.SkipRebuild {
-		r.l.Infof("Skip rebuild indexes")
+		r.l.Info("use skip_rebuild option, skipped rebuild indexes")
 		return nil
 	}
 

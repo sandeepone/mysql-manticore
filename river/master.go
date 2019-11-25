@@ -62,7 +62,7 @@ func (m *masterState) load() (err error) {
 	}
 
 	if m.skipFileSyncState {
-		log.Info("skipped loading master info from file: disabled via config")
+		log.Info("use skip_file_sync_state option, skipped loading synchronization state from file")
 		return nil
 	}
 
@@ -110,7 +110,7 @@ func (m *masterState) save() error {
 	defer m.Unlock()
 
 	if m.skipFileSyncState {
-		// log.Info("skipped saving position to file: disabled in config")
+		// log.Info("use skip_file_sync_state option, skipped loading synchronization state from file")
 		return nil
 	}
 
