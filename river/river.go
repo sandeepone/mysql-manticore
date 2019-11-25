@@ -282,7 +282,10 @@ func (r *River) initMasterState() (err error) {
 		return errors.Trace(err)
 	}
 
-	// r.l.Infof("master state: %s", m.String())
+	if !m.skipFileSyncState {
+		r.l.Infof("master state: %s", m.String())
+	}
+
 	if m.needPositionReset || (m.useGTID && m.gtid == nil) || m.pos == nil {
 		r.l.Infof("resetting master state to the current upstream position")
 		err = m.resetToCurrent(r.canal)
@@ -382,6 +385,10 @@ func (r *River) checkAllIndexesForOptimize() {
 
 // rebuildAll rebuilds all configured indexes
 func (r *River) rebuildAll(ctx context.Context, reason string) error {
+	if r.c.SkipRebuild {
+		return nil
+	}
+
 	return r.rebuildIfNot(
 		ctx,
 		reason,
@@ -392,6 +399,11 @@ func (r *River) rebuildAll(ctx context.Context, reason string) error {
 }
 
 func (r *River) rebuildIfNotReady(ctx context.Context) error {
+	if r.c.SkipRebuild {
+		r.l.Infof("Skip rebuild indexes")
+		return nil
+	}
+
 	isReady := func(index string, cfg *SourceConfig) (bool, error) {
 		return r.sphinxService.IndexIsReady(index, cfg.Parts)
 	}

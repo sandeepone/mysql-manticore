@@ -491,20 +491,22 @@ func rebuildIndexGroup(ctx context.Context, r *River, build indexGroupBuild) err
 		return errors.Annotate(err, "pausing canal updates failed")
 	}
 
-	//GLEEZ COMMENT
-
-	// err = buildAndUploadIndexGroup(ctx, r.c, build)
-	// if err != nil {
-	// 	r.disableBuildMode()
-	// 	return errors.Trace(err)
-	// }
+	if !r.c.SkipUploadIndex {
+		err = buildAndUploadIndexGroup(ctx, r.c, build)
+		if err != nil {
+			r.disableBuildMode()
+			return errors.Trace(err)
+		}
+	}
 
 	r.stopSyncRoutine()
 
-	// err = r.sphinxService.ReloadRtIndex(build)
-	// if err != nil {
-	// 	return errors.Trace(err)
-	// }
+	if !r.c.SkipReloadRtIndex {
+		err = r.sphinxService.ReloadRtIndex(build)
+		if err != nil {
+			return errors.Trace(err)
+		}
+	}
 
 	if build.rebuildState != nil {
 		if err = r.master.resetToCurrent(build.rebuildState); err != nil {

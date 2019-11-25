@@ -155,7 +155,10 @@ type Config struct {
 
 	UseGTID bool `toml:"use_gtid"`
 
-	SavePosToFile bool `toml:"save_pos_to_file"`
+	SkipFileSyncState bool `toml:"skip_file_sync_state"`
+	SkipRebuild       bool `toml:"skip_rebuild"`
+	SkipUploadIndex   bool `toml:"skip_upload_index"`
+	SkipReloadRtIndex bool `toml:"skip_reload_rt_index"`
 }
 
 // IndexMysqlSettings settings for connection to mysql from indexer

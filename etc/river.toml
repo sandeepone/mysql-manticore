@@ -46,8 +46,17 @@ replay_full_binlog = false
 
 use_gtid = true
 
-# Save the master position info to file in data_dir.
-save_pos_to_file = false
+# Skip save the master position info to file in data_dir.
+skip_file_sync_state = false
+
+# Skip rebuilding index(s)
+skip_rebuild = false
+
+# Skip upload the index(s) to search server
+skip_upload_index = false
+
+# Skip reload Manticore RT Index command
+skip_reload_rt_index = false
 
 [sph_conn_settings]
   disconnect_retry_delay = "1s"
