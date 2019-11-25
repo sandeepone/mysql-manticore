@@ -23,6 +23,10 @@ func getDBValueExpression(result *mysql.Result, fieldType string, rowNo int, col
 		return formatString(result, rowNo, colNo)
 	case AttrMulti, AttrMulti64:
 		return formatMulti(result, rowNo, colNo)
+	case AttrBool:
+		return formatBool(result, rowNo, colNo)
+	case AttrTimestamp:
+		return formatTimestamp(result, rowNo, colNo)
 	default:
 		return "", errors.Errorf("somehow got invalid '%s' type from config", fieldType)
 	}
@@ -81,5 +85,27 @@ func formatMulti(result *mysql.Result, rowNo int, colNo int) (string, error) {
 	if err != nil {
 		return "", errors.Trace(err)
 	}
+
+	if val == "null" || val == "" {
+		return "()", nil
+	}
+
 	return fmt.Sprintf("(%s)", val), nil
+}
+
+func formatBool(result *mysql.Result, rowNo int, colNo int) (string, error) {
+	val, err := result.GetValue(rowNo, colNo)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	return fmt.Sprintf("%d", val), nil
+}
+
+func formatTimestamp(result *mysql.Result, rowNo int, colNo int) (string, error) {
+	val, err := result.GetFloat(rowNo, colNo)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	return fmt.Sprintf("%.0f", val), nil
 }

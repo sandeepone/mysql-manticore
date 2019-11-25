@@ -47,8 +47,8 @@ func run() (err error) {
 	var rebuildAndExit bool
 	var showVersion bool
 
-	flags.StringVar(&configFile, "config", "./etc/river.toml", "config file")
-	flags.StringVar(&dataDir, "data-dir", "", "directory for storing local application state")
+	flags.StringVar(&configFile, "config", "../../temp/etc/river.toml", "config file")
+	flags.StringVar(&dataDir, "data-dir", "../../temp/data", "directory for storing local application state")
 	flags.StringVar(&myAddr, "my-addr", "", "MySQL replica address")
 	flags.Var(&sphAddr, "sph-addr", "Sphinx address")
 	flags.StringVar(&logLevel, "log-level", "info", "log level")

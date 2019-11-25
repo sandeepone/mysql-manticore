@@ -120,7 +120,7 @@ func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	return err
 }
 
-func (h *eventHandler) OnPosSynced(pos mysql.Position, force bool) error {
+func (h *eventHandler) OnPosSynced(pos mysql.Position, set mysql.GTIDSet, force bool) error {
 	h.pos = pos
 	h.sendPositionEvent(force)
 	return h.r.ctx.Err()

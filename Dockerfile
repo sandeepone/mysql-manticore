@@ -1,4 +1,4 @@
-FROM golang:1.11.5-stretch AS builder
+FROM golang:1.13.4-stretch AS builder
 
 ENV SPHINX_VERSION 3.1.1-612d99f
 RUN wget https://sphinxsearch.com/files/sphinx-${SPHINX_VERSION}-linux-amd64.tar.gz -O /tmp/sphinxsearch.tar.gz \
@@ -13,8 +13,8 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 RUN curl -fsSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && chmod +x /usr/local/bin/dep
 RUN mkdir -p /go/src/github.com/superjobru/go-mysql-sphinx
 WORKDIR /go/src/github.com/superjobru/go-mysql-sphinx
-COPY Gopkg.lock Gopkg.toml ./
-RUN dep ensure -vendor-only
+#COPY Gopkg.lock Gopkg.toml ./
+#RUN dep ensure -vendor-only
 COPY . .
 RUN make
 

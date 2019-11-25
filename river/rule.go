@@ -1,6 +1,8 @@
 package river
 
 import (
+	"encoding/json"
+	// "fmt"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -20,11 +22,14 @@ const (
 
 // IngestRule is the rule for how to detect changed documents in MySQL.
 type IngestRule struct {
-	TableName    string              `toml:"table"`
-	DocIDField   string              `toml:"id_field"`
-	Index        string              `toml:"index"`
-	ColumnMap    map[string][]string `toml:"column_map"`
-	timeProvider func() time.Time
+	TableName      string              `toml:"table"`
+	DocIDField     string              `toml:"id_field"`
+	Index          string              `toml:"index"`
+	ColumnMap      map[string][]string `toml:"column_map"`
+	JsonColumnName string              `toml:"json_column_name"`
+	JsonTypeName   string              `toml:"json_type_name"`  // optional used for tao_objects type column ex: user or post or comment
+	JsonTypeValue  int                 `toml:"json_type_value"` // optional used for tao_objects type column ex: 1 or 3 or 4
+	timeProvider   func() time.Time
 }
 
 // IngestTable is just a struct to avoid concatenation
@@ -122,6 +127,23 @@ func (r *IngestRule) Apply(e *canal.RowsEvent) ([]TableRowChange, error) {
 	if r.TableName != e.Table.String() {
 		return nil, nil
 	}
+
+	if r.JsonTypeValue > 0 {
+		typColNo, err := fieldIndex(e, r.JsonTypeName)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		ok, err := isJsonRowTypeValid(e, typColNo, r.JsonTypeValue)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		if !ok {
+			return nil, nil
+		}
+	}
+
 	idColNo, err := fieldIndex(e, r.DocIDField)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -146,12 +168,27 @@ func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) 
 		if err != nil {
 			return docCount, errors.Trace(err)
 		}
-		if docs != nil {
+
+		// Log skipped event
+		if docs == nil && rule.JsonTypeValue > 0 {
 			log.Infof(
-				"[row event] ruleId=%d index=%s table=%s action=%s rows=%d docs=%v",
+				"[row event skipped] ruleId=%d index=%s table=%s type!=%d action=%s rows=%d",
 				ruleID,
 				rule.Index,
 				e.Table,
+				rule.JsonTypeValue,
+				e.Action,
+				rowCount(e),
+			)
+		}
+
+		if docs != nil {
+			log.Infof(
+				"[row event] ruleId=%d index=%s table=%s type=%d action=%s rows=%d docs=%v",
+				ruleID,
+				rule.Index,
+				e.Table,
+				rule.JsonTypeValue,
 				e.Action,
 				rowCount(e),
 				DocIDList(docs),
@@ -188,6 +225,7 @@ func (r *IngestRule) makeUpdateChangeSet(e *canal.RowsEvent, idColNo int) ([]Tab
 	c := make([]TableRowChange, 0, len(e.Rows))
 	columns := columnNames(e)
 	pkColumns := realPKColumns(e)
+
 	for i := 0; i < len(e.Rows)/2; i++ {
 		oldRow := e.Rows[i*2]
 		newRow := e.Rows[i*2+1]
@@ -246,15 +284,39 @@ func emptyRow(row []interface{}) []interface{} {
 func (r *IngestRule) filterColumns(columns []string, row []interface{}) ([]string, []interface{}) {
 	filteredColumns := make([]string, len(r.ColumnMap))
 	filteredRow := make([]interface{}, len(r.ColumnMap))
+
+	// fmt.Printf("FilterColumns %+v\n", r.ColumnMap)
+
 	i := 0
 	for colNo, col := range columns {
-		_, isIndexed := r.ColumnMap[col]
-		if isIndexed {
-			filteredColumns[i] = col
-			filteredRow[i] = row[colNo]
-			i++
+		if data, ok := row[colNo].([]byte); ok && col == r.JsonColumnName {
+
+			var obj map[string]interface{}
+			err := json.Unmarshal(data, &obj)
+			if err != nil {
+				continue
+			}
+
+			for k, v := range obj {
+				// fmt.Printf("FilterColumns key[%s] value[%v]\n", k, v)
+
+				_, isIndexed := r.ColumnMap[k]
+				if isIndexed {
+					filteredColumns[i] = k
+					filteredRow[i] = v
+					i++
+				}
+			}
+		} else {
+			_, isIndexed := r.ColumnMap[col]
+			if isIndexed {
+				filteredColumns[i] = col
+				filteredRow[i] = row[colNo]
+				i++
+			}
 		}
 	}
+
 	return filteredColumns, filteredRow
 }
 
@@ -279,6 +341,7 @@ func (r *IngestRule) updatedTableRow(docID uint64, pkCols []int, columns []strin
 	pk := newPrimaryKeyFromRow(pkCols, oldRow)
 	_, oldRow = r.filterColumns(columns, oldRow)
 	columns, newRow = r.filterColumns(columns, newRow)
+
 	return TableRowChange{
 		Action:    canal.UpdateAction,
 		Columns:   columns,
@@ -317,4 +380,20 @@ func fieldIndex(e *canal.RowsEvent, fieldName string) (int, error) {
 		}
 	}
 	return -1, errors.Errorf("field %s not found in binlog event %s", fieldName, spew.Sdump(e))
+}
+
+func isJsonRowTypeValid(e *canal.RowsEvent, typColNo, typColVal int) (bool, error) {
+
+	for _, row := range e.Rows {
+		typId, err := util.CoerceToUint32(row[typColNo])
+		if err != nil {
+			return false, errors.Trace(err)
+		}
+
+		if int(typId) == typColVal {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

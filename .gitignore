@@ -2,4 +2,7 @@
 bin
 debug
 var
+data
+temp
+tmp
 vendor

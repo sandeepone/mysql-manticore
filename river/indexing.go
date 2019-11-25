@@ -208,6 +208,7 @@ func newIndexBuild(c *Config, index string, idGen func() uuid.UUID) (*indexBuild
 	}
 	buildID := idGen().String()
 	chunks := make([]indexChunkBuild, dataSource.Parts)
+
 	for i, d := range data {
 		funcs := map[string]interface{}{
 			"tmpname": func(f string) string {
@@ -253,9 +254,11 @@ func newIndexGroupBuild(
 			indexes = append(indexes, index)
 		}
 	}
+
 	if idGen == nil {
 		return nil, errors.Trace(errMissingIDGenerator)
 	}
+
 	buildID := idGen()
 	childIDGen := func() uuid.UUID { return buildID }
 	builds := make([]indexBuild, len(indexes))
@@ -366,6 +369,7 @@ func buildIndexChunkWithDir(ctx context.Context, logger loggers.Advanced, chunk 
 	if err != nil {
 		return errors.Trace(err)
 	}
+
 	for _, file := range chunk.files {
 		newfile := util.DictionaryTmpFilename(chunk.plainIndex, file)
 		err = util.Copy(file, filepath.Join(dir, newfile))
@@ -480,20 +484,26 @@ func rebuildIndexGroup(ctx context.Context, r *River, build indexGroupBuild) err
 		r.rebuildInProgress.Remove(index)
 		return false
 	})
+
 	err := r.enableBuildMode()
 	if err != nil {
 		return errors.Annotate(err, "pausing canal updates failed")
 	}
-	err = buildAndUploadIndexGroup(ctx, r.c, build)
-	if err != nil {
-		r.disableBuildMode()
-		return errors.Trace(err)
-	}
+
+	//GLEEZ COMMENT
+
+	// err = buildAndUploadIndexGroup(ctx, r.c, build)
+	// if err != nil {
+	// 	r.disableBuildMode()
+	// 	return errors.Trace(err)
+	// }
+
 	r.stopSyncRoutine()
-	err = r.sphinxService.ReloadRtIndex(build)
-	if err != nil {
-		return errors.Trace(err)
-	}
+
+	// err = r.sphinxService.ReloadRtIndex(build)
+	// if err != nil {
+	// 	return errors.Trace(err)
+	// }
 
 	if build.rebuildState != nil {
 		if err = r.master.resetToCurrent(build.rebuildState); err != nil {
@@ -523,6 +533,8 @@ func buildAndUploadIndexGroup(ctx context.Context, config *Config, build indexGr
 		files = append(files, singleIndexFiles...)
 	}
 	os.RemoveAll(buildDir)
+
+	//GLEEZ COMMENT
 	hosts, err := makeHostListForUploading(config.SphAddr, build.uploader.HostMap)
 	if err != nil {
 		return errors.Annotatef(err, "error making list of hosts for uploading index files")

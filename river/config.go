@@ -93,6 +93,10 @@ type BalancerConfig struct {
 const (
 	// DocID document id
 	DocID = "id"
+	// AttrTimestamp rt_attr_timestamp
+	AttrTimestamp = "attr_timestamp"
+	// AttrBool rt_attr_bool
+	AttrBool = "attr_bool"
 	// AttrFloat rt_attr_float
 	AttrFloat = "attr_float"
 	// AttrUint rt_attr_uint
@@ -301,6 +305,8 @@ func checkIndexColumnType(t string) error {
 	switch t {
 	case
 		DocID,
+		AttrTimestamp,
+		AttrBool,
 		AttrFloat,
 		AttrUint,
 		AttrBigint,
@@ -425,6 +431,8 @@ func parseSelectExpressions(queryAst *sqlparser.Select) (*SourceConfigDetails, e
 			AttrUint,
 			AttrBigint,
 			AttrMulti,
+			AttrBool,
+			AttrTimestamp,
 			AttrMulti64:
 			cfg.attrFields.Add(colName)
 		}
