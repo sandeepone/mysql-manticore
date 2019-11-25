@@ -3,13 +3,10 @@ VERSION?=git-$(shell git rev-parse --abbrev-ref HEAD)-$(shell git rev-parse --sh
 .PHONY: all
 all: build
 
-vendor: Gopkg.lock Gopkg.toml
-	dep ensure -vendor-only
-
 .PHONY: build
-build: vendor
-	go build -ldflags "-X main.version=$(VERSION)" -o bin/go-mysql-sphinx ./cmd/go-mysql-sphinx/
+build:
+	go build -ldflags "-X main.version=$(VERSION)" -o bin/mysql-manticore ./cmd/mysql-manticore/
 
 .PHONY: test
-test: vendor
+test:
 	go test $(TEST_FLAGS) ./river/
