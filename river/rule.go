@@ -8,6 +8,8 @@ import (
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/canal"
+	"github.com/siddontang/go-mysql/schema"
+
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
@@ -29,6 +31,9 @@ type IngestRule struct {
 	JsonTypeName   string              `toml:"json_type_name"`  // optional used for tao_objects type column ex: user or post or comment
 	JsonTypeValue  int                 `toml:"json_type_value"` // optional used for tao_objects type column ex: 1 or 3 or 4
 	timeProvider   func() time.Time
+
+	// MySQL table information
+	TableInfo *schema.Table
 }
 
 // IngestTable is just a struct to avoid concatenation

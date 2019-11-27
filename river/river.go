@@ -109,6 +109,10 @@ func NewRiver(c *Config, log loggers.Contextual, rebuildAndExit bool) (*River, e
 		return nil, errors.Trace(err)
 	}
 
+	if err = r.prepareRule(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	if r.balancer, err = NewBalancerClient(r.c.Balancer); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -450,6 +454,23 @@ func (r *River) rebuildIfNot(
 	err = r.startRebuildingIndexGroup(ctx, *build)
 	if err != nil {
 		return errors.Trace(err)
+	}
+
+	return nil
+}
+
+func (r *River) prepareRule() error {
+	if r.c.IngestRules != nil {
+		for _, rule := range r.c.IngestRules {
+			var err error
+
+			if strings.Contains(rule.TableName, ".") {
+				s := strings.Split(rule.TableName, ".")
+				if rule.TableInfo, err = r.canal.GetTable(s[0], s[1]); err != nil {
+					return errors.Trace(err)
+				}
+			}
+		}
 	}
 
 	return nil

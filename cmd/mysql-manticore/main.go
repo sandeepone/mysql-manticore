@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/sandeepone/mysql-manticore/river"
 	"github.com/thejerf/suture"
+
+	"github.com/sandeepone/mysql-manticore/river"
+	"github.com/sandeepone/mysql-manticore/util"
+
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
@@ -65,7 +68,7 @@ func run() (err error) {
 		return err
 	}
 
-	if err = initLogger(logLevel, logFile); err != nil {
+	if err = util.InitLogger(logLevel, logFile, getVersion()); err != nil {
 		return err
 	}
 

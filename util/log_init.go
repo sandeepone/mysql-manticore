@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"os"
@@ -6,12 +6,11 @@ import (
 
 	mapper "github.com/birkirb/loggers-mapper-logrus"
 	"github.com/juju/errors"
-	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
-func initLogger(logLevel string, logFile string) error {
+func InitLogger(logLevel string, logFile string, version string) error {
 	l := logrus.New()
 	if logFile == "" {
 		l.Out = os.Stdout
@@ -29,7 +28,8 @@ func initLogger(logLevel string, logFile string) error {
 	l.Level = level
 	l.Formatter = &logrus.TextFormatter{TimestampFormat: time.RFC3339Nano}
 	log.Logger = mapper.NewLogger(l)
-	util.SetupLogAdapter(log.Logger, logLevel, "library", "go-mysql")
-	log.Infof("starting %s", getVersion())
+
+	SetupLogAdapter(log.Logger, logLevel, "library", "go-mysql")
+	log.Infof("starting %s", version)
 	return nil
 }
