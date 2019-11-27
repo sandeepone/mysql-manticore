@@ -12,8 +12,10 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/juju/errors"
+
 	"github.com/siddontang/go-mysql/mysql"
 	"github.com/siddontang/go/ioutil2"
+
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
@@ -88,6 +90,7 @@ func (m *masterState) load() (err error) {
 	if err != nil {
 		return errors.Trace(err)
 	}
+
 	m.needPositionReset = p.Reset
 	m.pos = &mysql.Position{
 		Name: p.Name,
@@ -264,4 +267,12 @@ func (m *masterState) resetToCurrent(p MysqlPositionProvider) error {
 	m.pos = &currentPos
 
 	return nil
+}
+
+func (s *masterState) GetMasterGTIDSet() (mysql.GTIDSet, error) {
+	return *s.gtid, nil
+}
+
+func (s *masterState) GetMasterPos() (mysql.Position, error) {
+	return *s.pos, nil
 }

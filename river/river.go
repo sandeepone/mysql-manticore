@@ -14,6 +14,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/siddontang/go-mysql/canal"
 	"github.com/thejerf/suture"
+
 	"gopkg.in/birkirb/loggers.v1"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
@@ -146,6 +147,7 @@ func (r *River) newCanal() error {
 	cfg.Charset = r.c.MyCharset
 	cfg.Flavor = r.c.Flavor
 	cfg.HeartbeatPeriod = r.c.HeartbeatPeriod.Duration
+	cfg.ParseTime = true
 
 	cfg.IncludeTableRegex = []string{}
 	for _, rule := range r.c.IngestRules {
@@ -168,6 +170,7 @@ func (r *River) CheckBinlogRowImage() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
+
 	rowImage, _ := res.GetString(0, 1)
 	if !strings.EqualFold(rowImage, "FULL") {
 		return errors.Errorf("MySQL uses '%s' binlog row image, but we want FULL", rowImage)
@@ -181,6 +184,7 @@ func (r *River) Serve() {
 	r.m.Lock()
 	r.isRunning = true
 	r.m.Unlock()
+
 	err := r.run()
 	if err != nil {
 		r.FatalErrC <- err
@@ -213,11 +217,19 @@ func (r *River) run() error {
 	} else {
 		err = r.rebuildIfNotReady(nil)
 	}
+
 	if err != nil {
 		return errors.Trace(err)
 	}
+
 	if r.rebuildAndExit {
 		return errors.Trace(ErrRebuildAndExitFlagSet)
+	}
+
+	if r.master.skipFileSyncState {
+		// r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
+		r.l.Infof("use skip_file_sync_state option, resetting master state to the current upstream position")
+		err = r.master.resetToCurrent(r.canal)
 	}
 
 	r.master.needPositionReset = false
@@ -235,6 +247,7 @@ func (r *River) run() error {
 // RebuildInProgress list of indexes that are being rebuilt right now
 func (r *River) RebuildInProgress() []string {
 	p := r.rebuildInProgress.ToSlice()
+
 	indexList := make([]string, len(p))
 	for i, index := range p {
 		indexList[i] = index.(string)
@@ -282,17 +295,18 @@ func (r *River) String() string {
 func (r *River) initMasterState() (err error) {
 	m := r.master
 	err = m.load()
+
 	if err != nil {
 		return errors.Trace(err)
 	}
 
 	if !m.skipFileSyncState {
 		r.l.Infof("master state: %s", m.String())
-	}
 
-	if m.needPositionReset || (m.useGTID && m.gtid == nil) || m.pos == nil {
-		r.l.Infof("resetting master state to the current upstream position")
-		err = m.resetToCurrent(r.canal)
+		if m.needPositionReset || (m.useGTID && m.gtid == nil) || m.pos == nil {
+			r.l.Infof("resetting master state to the current upstream position")
+			err = m.resetToCurrent(r.canal)
+		}
 	}
 	return
 }
@@ -308,10 +322,12 @@ func (r *River) SaveState() {
 func (r *River) startSyncRoutine() {
 	r.syncM.Lock()
 	defer r.syncM.Unlock()
+
 	if r.syncToken == nil {
 		t := r.sup.Add(r.syncService)
 		r.syncToken = &t
 	}
+
 	if r.canalToken == nil {
 		t := r.sup.Add(NewCanalService(r))
 		r.canalToken = &t
@@ -321,6 +337,7 @@ func (r *River) startSyncRoutine() {
 func (r *River) stopSyncRoutine() {
 	r.syncM.Lock()
 	defer r.syncM.Unlock()
+
 	if r.canalToken != nil {
 		err := r.sup.RemoveAndWait(*r.canalToken, canalServiceStopTimeout)
 		if err != nil {
@@ -328,6 +345,7 @@ func (r *River) stopSyncRoutine() {
 		}
 		r.canalToken = nil
 	}
+
 	if r.syncToken != nil {
 		err := r.sup.RemoveAndWait(*r.syncToken, syncServiceStopTimeout)
 		if err != nil {
@@ -340,6 +358,7 @@ func (r *River) stopSyncRoutine() {
 func (r *River) enableBuildMode() error {
 	r.syncM.Lock()
 	defer r.syncM.Unlock()
+
 	if r.syncToken == nil {
 		r.l.Infof("did not enable build mode since river sync thread is not running")
 		return nil
@@ -350,6 +369,7 @@ func (r *River) enableBuildMode() error {
 func (r *River) disableBuildMode() error {
 	r.syncM.Lock()
 	defer r.syncM.Unlock()
+
 	if r.syncToken == nil {
 		r.l.Infof("did not disable build mode since river sync thread is not running")
 		return nil
@@ -362,14 +382,17 @@ func (r *River) startRebuildingIndexGroup(ctx context.Context, build indexGroupB
 	if ctx == nil {
 		ctx, cancelFunc = context.WithCancel(r.ctx)
 	}
+
 	build.logger.Info("rebuild start")
 	r.StatService.logRebuildStart(build)
+
 	err := rebuildIndexGroup(ctx, r, build)
 	if err != nil {
 		build.logger.Errorf("rebuild failed: %s", errors.ErrorStack(err))
 	} else {
 		build.logger.Info("rebuild done")
 	}
+
 	r.StatService.logRebuildFinish(build.id, err)
 	if cancelFunc != nil {
 		cancelFunc()
@@ -390,7 +413,7 @@ func (r *River) checkAllIndexesForOptimize() {
 // rebuildAll rebuilds all configured indexes
 func (r *River) rebuildAll(ctx context.Context, reason string) error {
 	if r.c.SkipRebuild {
-		r.l.Info("use skip_rebuild option, skipped rebuild indexes")
+		r.l.Infof("use skip_rebuild option, skipped rebuildAll indexes: [%s]", reason)
 		return nil
 	}
 
@@ -420,6 +443,7 @@ func (r *River) rebuildIfNot(
 	reason string,
 	predicate func(string, *SourceConfig) (bool, error),
 ) (err error) {
+
 	indexes := []string{}
 	for index, cfg := range r.c.DataSource {
 		skipRebuild, err := predicate(index, cfg)
@@ -461,17 +485,28 @@ func (r *River) rebuildIfNot(
 
 func (r *River) prepareRule() error {
 	if r.c.IngestRules != nil {
-		for _, rule := range r.c.IngestRules {
-			var err error
+		for key, rule := range r.c.IngestRules {
 
 			if strings.Contains(rule.TableName, ".") {
 				s := strings.Split(rule.TableName, ".")
-				if rule.TableInfo, err = r.canal.GetTable(s[0], s[1]); err != nil {
+
+				if err := r.updateRule(key, s[0], s[1]); err != nil {
 					return errors.Trace(err)
 				}
 			}
 		}
 	}
+
+	return nil
+}
+
+func (r *River) updateRule(key int, schema, table string) error {
+	tableInfo, err := r.canal.GetTable(schema, table)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	r.c.IngestRules[key].TableInfo = tableInfo
 
 	return nil
 }

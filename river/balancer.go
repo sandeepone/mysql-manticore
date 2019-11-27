@@ -13,6 +13,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/sphinx"
+
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
@@ -111,23 +112,27 @@ func (b *BalancerClient) RollingReloadIndex(sph []*sphinx.SphConn, build indexGr
 	if err != nil {
 		return errors.Trace(err)
 	}
+
 	for _, conn := range sph {
 		argSet, err := b.gatherServerSetStateArgs(state, conn.Hostname())
 		if err != nil {
 			return errors.Trace(err)
 		}
+
 		b.setServerStateMultiple(argSet, disabledState)
 		pause = b.Config.PauseAfterDisabling.Duration
 		if pause > 0 && len(argSet) > 0 {
 			log.Infof("[balancer] waiting for %s after disabling %s", pause, conn.Hostname())
 			time.Sleep(pause)
 		}
+
 		for _, indexBuild := range build.indexes {
 			err = conn.ReloadRtIndex(indexBuild.index, indexBuild.parts)
 			if err != nil {
 				return errors.Trace(err)
 			}
 		}
+
 		pause = b.Config.PauseBeforeEnabling.Duration
 		if pause > 0 && len(argSet) > 0 {
 			log.Infof("[balancer] waiting for %s before enabling %s", pause, conn.Hostname())
@@ -146,6 +151,7 @@ func (b *BalancerClient) gatherServerSetStateArgs(state [][]*ServerStateInfo, sp
 			if err != nil {
 				return nil, errors.Annotatef(err, "server state not found at balancer '%s'", balancer.Addr)
 			}
+
 			allowed, reason := srv.isManagementAllowed()
 			if !allowed {
 				log.Infof("[balancer] will not manage '%s' in '%s@%s': %s", sphinxHostname, backend, balancer.Addr, reason)
@@ -172,6 +178,7 @@ func (b *BalancerClient) setServerState(connections []BalancerConn, backend, ser
 	if err != nil {
 		return errors.Trace(err)
 	}
+
 	for i, reply := range replies {
 		if reply != expectedStateChangeReply {
 			return errors.Annotatef(errBalancerQueryError, "error setting state to '%s' for server '%s' in backend '%s@%s'", stateName, serverName, backend, connections[i].Addr)
@@ -251,11 +258,13 @@ func (b *BalancerClient) sendCommand(connections []BalancerConn, cmd string) ([]
 		c.Conn.SetDeadline(time.Now().Add(b.Config.Timeout.Duration))
 		log.Infof("[balancer] %s <- %s", c.Addr, cmd)
 		_, err := c.Conn.Write([]byte(cmd))
+
 		if err != nil {
 			err = errors.Annotatef(err, "error sending command to balancer '%s'", c.Addr)
 			log.Errorf("[balancer] %s", err)
 			return replies, err
 		}
+
 		result := bytes.NewBuffer(nil)
 		_, err = io.Copy(result, c.Conn)
 		if err != nil {
@@ -263,6 +272,7 @@ func (b *BalancerClient) sendCommand(connections []BalancerConn, cmd string) ([]
 			log.Errorf("[balancer] %s", err)
 			return replies, err
 		}
+
 		replies[i] = result.String()
 		log.Infof("[balancer] %s -> %s", c.Addr, replies[i])
 	}

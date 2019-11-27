@@ -402,6 +402,7 @@ func runIndexer(ctx context.Context, logger loggers.Advanced, dir, configFile st
 	if err != nil {
 		return errors.Annotatef(err, "indexer executable is not found in PATH")
 	}
+
 	stdoutFile := filepath.Join(dir, fmt.Sprintf("%s.stdout.log", chunk.plainIndex))
 	stderrFile := filepath.Join(dir, fmt.Sprintf("%s.stderr.log", chunk.plainIndex))
 	stdoutBuf := bytes.NewBuffer([]byte{})
@@ -411,6 +412,7 @@ func runIndexer(ctx context.Context, logger loggers.Advanced, dir, configFile st
 		return errors.Trace(err)
 	}
 	defer stdout.Close()
+
 	stderr, err := os.OpenFile(stderrFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Trace(err)

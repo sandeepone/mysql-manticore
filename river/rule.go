@@ -6,6 +6,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/juju/errors"
+
 	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/canal"
 	"github.com/siddontang/go-mysql/schema"
@@ -289,7 +290,7 @@ func (r *IngestRule) filterColumns(columns []string, row []interface{}) ([]strin
 	filteredColumns := make([]string, len(r.ColumnMap))
 	filteredRow := make([]interface{}, len(r.ColumnMap))
 
-	// fmt.Printf("FilterColumns %+v\n", r.ColumnMap)
+	// fmt.Printf("TableInfo %+v\n", r.TableInfo)
 
 	i := 0
 	for colNo, col := range columns {
