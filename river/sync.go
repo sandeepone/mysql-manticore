@@ -76,7 +76,7 @@ func (h *eventHandler) OnRotate(e *replication.RotateEvent) error {
 		Pos:  uint32(e.Position),
 	}
 
-	h.sendPositionEvent(true)
+	h.sendPositionEvent(true, nil)
 
 	return h.r.ctx.Err()
 }
@@ -91,7 +91,7 @@ func (h *eventHandler) OnDDL(nextPos mysql.Position, e *replication.QueryEvent) 
 		return err
 	}
 	h.pos = nextPos
-	h.sendPositionEvent(true)
+	h.sendPositionEvent(true, e.GSet)
 	return h.r.ctx.Err()
 }
 
@@ -99,7 +99,8 @@ func (h *eventHandler) OnXID(nextPos mysql.Position) error {
 	h.pos = nextPos
 	h.completedGTID = h.activeGTID.Clone()
 	forceFlush := h.r.c.FlushBulkTime.Duration == 0
-	h.sendPositionEvent(forceFlush)
+
+	h.sendPositionEvent(forceFlush, nil)
 	return h.r.ctx.Err()
 }
 
@@ -107,7 +108,7 @@ func (h *eventHandler) OnGTID(gtid mysql.GTIDSet) error {
 	if err := h.updateGTID(gtid); err != nil {
 		return err
 	}
-	h.sendPositionEvent(false)
+	h.sendPositionEvent(false, gtid)
 	return h.r.ctx.Err()
 }
 
@@ -120,9 +121,12 @@ func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	return err
 }
 
-func (h *eventHandler) OnPosSynced(pos mysql.Position, set mysql.GTIDSet, force bool) error {
+func (h *eventHandler) OnPosSynced(pos mysql.Position, gtid mysql.GTIDSet, force bool) error {
+	if err := h.updateGTID(gtid); err != nil {
+		return err
+	}
 	h.pos = pos
-	h.sendPositionEvent(force)
+	h.sendPositionEvent(force, gtid)
 	return h.r.ctx.Err()
 }
 
@@ -130,9 +134,9 @@ func (h *eventHandler) String() string {
 	return "SphRiverEventHandler"
 }
 
-func (h *eventHandler) sendPositionEvent(forceFlush bool) {
-	var gtid mysql.GTIDSet
-	if h.completedGTID != nil {
+func (h *eventHandler) sendPositionEvent(forceFlush bool, gtid mysql.GTIDSet) {
+	// var gtid mysql.GTIDSet
+	if gtid == nil && h.completedGTID != nil {
 		gtid = h.completedGTID.Clone()
 	}
 	h.r.syncC <- positionEvent{gtid, h.pos, forceFlush}
@@ -184,6 +188,8 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 		defer flushTicker.Stop()
 	}
 
+	lastSavedTime := time.Now()
+
 	for {
 		need := state.acceptMessage(s)
 
@@ -219,11 +225,16 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 			state.positionEvents = state.positionEvents[offset:]
 
 			if !state.buildModeEnabled {
-				if r.master.updatePosition(state.positionEvents[0]) {
-					r.SaveState()
-					sc := state.processGTIDSubscribers()
-					if sc > 0 {
-						s.log.Infof("notified %d gtid subscribers", sc)
+				now := time.Now()
+				if now.Sub(lastSavedTime) > 3*time.Second {
+					lastSavedTime = now
+
+					if r.master.updatePosition(state.positionEvents[0]) {
+						r.SaveState()
+						sc := state.processGTIDSubscribers()
+						if sc > 0 {
+							s.log.Infof("notified %d gtid subscribers", sc)
+						}
 					}
 				}
 			}

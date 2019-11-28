@@ -37,25 +37,25 @@ type IngestRule struct {
 	TableInfo *schema.Table
 }
 
-// IngestTable is just a struct to avoid concatenation
-type IngestTable struct {
-	Schema string
-	Table  string
-}
+// // IngestTable is just a struct to avoid concatenation
+// type IngestTable struct {
+// 	Schema string
+// 	Table  string
+// }
 
-func toRowValueMap(e *canal.RowsEvent) map[string]interface{} {
-	var colName string
-	row := map[string]interface{}{}
-	for _, values := range e.Rows {
-		for i, val := range values {
-			colName = e.Table.Columns[i].Name
-			if row[colName] == nil {
-				row[colName] = val
-			}
-		}
-	}
-	return row
-}
+// func toRowValueMap(e *canal.RowsEvent) map[string]interface{} {
+// 	var colName string
+// 	row := map[string]interface{}{}
+// 	for _, values := range e.Rows {
+// 		for i, val := range values {
+// 			colName = e.Table.Columns[i].Name
+// 			if row[colName] == nil {
+// 				row[colName] = val
+// 			}
+// 		}
+// 	}
+// 	return row
+// }
 
 func rowToArray(row []interface{}) [128]interface{} {
 	var m [128]interface{}

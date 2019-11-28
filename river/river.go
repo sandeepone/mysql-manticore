@@ -227,9 +227,9 @@ func (r *River) run() error {
 	}
 
 	if r.master.skipFileSyncState {
-		// r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
-		r.l.Infof("use skip_file_sync_state option, resetting master state to the current upstream position")
-		err = r.master.resetToCurrent(r.canal)
+		r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
+		// r.l.Infof("use skip_file_sync_state option, resetting master state to the current upstream position")
+		// err = r.master.resetToCurrent(r.canal)
 	}
 
 	r.master.needPositionReset = false
@@ -428,7 +428,7 @@ func (r *River) rebuildAll(ctx context.Context, reason string) error {
 
 func (r *River) rebuildIfNotReady(ctx context.Context) error {
 	if r.c.SkipRebuild {
-		r.l.Info("use skip_rebuild option, skipped rebuild indexes")
+		r.l.Info("use skip_rebuild option, skipped rebuildIfNotReady")
 		return nil
 	}
 

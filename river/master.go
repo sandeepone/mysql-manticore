@@ -268,11 +268,3 @@ func (m *masterState) resetToCurrent(p MysqlPositionProvider) error {
 
 	return nil
 }
-
-func (s *masterState) GetMasterGTIDSet() (mysql.GTIDSet, error) {
-	return *s.gtid, nil
-}
-
-func (s *masterState) GetMasterPos() (mysql.Position, error) {
-	return *s.pos, nil
-}
