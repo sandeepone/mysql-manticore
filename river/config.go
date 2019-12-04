@@ -13,9 +13,10 @@ import (
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/util"
-	"github.com/xwb1989/sqlparser"
-	"github.com/xwb1989/sqlparser/dependency/querypb"
-	"github.com/xwb1989/sqlparser/dependency/sqltypes"
+
+	"vitess.io/vitess/go/sqltypes"
+	querypb "vitess.io/vitess/go/vt/proto/query"
+	"vitess.io/vitess/go/vt/sqlparser"
 )
 
 // IndexerConfig is the configs for source
@@ -93,6 +94,8 @@ type BalancerConfig struct {
 const (
 	// DocID document id
 	DocID = "id"
+	// AttrJson rt_attr_json
+	AttrJson = "attr_json"
 	// AttrTimestamp rt_attr_timestamp
 	AttrTimestamp = "attr_timestamp"
 	// AttrBool rt_attr_bool
@@ -310,6 +313,7 @@ func checkIndexColumnType(t string) error {
 	switch t {
 	case
 		DocID,
+		AttrJson,
 		AttrTimestamp,
 		AttrBool,
 		AttrFloat,
@@ -436,8 +440,9 @@ func parseSelectExpressions(queryAst *sqlparser.Select) (*SourceConfigDetails, e
 			AttrUint,
 			AttrBigint,
 			AttrMulti,
-			AttrBool,
 			AttrString,
+			AttrJson,
+			AttrBool,
 			AttrTimestamp,
 			AttrMulti64:
 			cfg.attrFields.Add(colName)

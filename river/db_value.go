@@ -27,6 +27,8 @@ func getDBValueExpression(result *mysql.Result, fieldType string, rowNo int, col
 		return formatBool(result, rowNo, colNo)
 	case AttrTimestamp:
 		return formatTimestamp(result, rowNo, colNo)
+	case AttrJson:
+		return formatJson(result, rowNo, colNo)
 	default:
 		return "", errors.Errorf("somehow got invalid '%s' type from config", fieldType)
 	}
@@ -108,4 +110,13 @@ func formatTimestamp(result *mysql.Result, rowNo int, colNo int) (string, error)
 	}
 
 	return fmt.Sprintf("%.0f", val), nil
+}
+
+func formatJson(result *mysql.Result, rowNo int, colNo int) (string, error) {
+	val, err := result.GetString(rowNo, colNo)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	return fmt.Sprintf("%s", val), nil
 }
