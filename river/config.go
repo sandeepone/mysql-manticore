@@ -437,6 +437,7 @@ func parseSelectExpressions(queryAst *sqlparser.Select) (*SourceConfigDetails, e
 			AttrBigint,
 			AttrMulti,
 			AttrBool,
+			AttrString,
 			AttrTimestamp,
 			AttrMulti64:
 			cfg.attrFields.Add(colName)

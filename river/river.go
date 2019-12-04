@@ -228,8 +228,6 @@ func (r *River) run() error {
 
 	if r.master.skipFileSyncState {
 		r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
-		// r.l.Infof("use skip_file_sync_state option, resetting master state to the current upstream position")
-		// err = r.master.resetToCurrent(r.canal)
 	}
 
 	r.master.needPositionReset = false
