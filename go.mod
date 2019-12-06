@@ -12,6 +12,7 @@ require (
 	github.com/kr/pretty v0.1.0
 	github.com/kr/text v0.1.0
 	github.com/robfig/cron v1.2.0
+	github.com/sandeepone/sqlparser v0.0.0-20191206073631-108f7fcbf8a5
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726
@@ -20,13 +21,13 @@ require (
 	github.com/siddontang/loggers v1.0.4-0.20180516082531-fa51471f8169
 	github.com/sirupsen/logrus v1.4.2
 	github.com/thejerf/suture v3.0.2+incompatible
+	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
 	golang.org/x/sys v0.0.0-20190926180325-855e68c8590b
 	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/birkirb/loggers.v1 v1.1.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
-	vitess.io/vitess v0.0.0-20191203172156-cfc73351e660
 )
 
 replace gopkg.in/birkirb/loggers.v1 v1.1.0 => github.com/siddontang/loggers v1.0.4-0.20180516082531-fa51471f8169

@@ -1,6 +1,7 @@
 package river
 
 import (
+	// "fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,9 +15,12 @@ import (
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/util"
 
-	"vitess.io/vitess/go/sqltypes"
-	querypb "vitess.io/vitess/go/vt/proto/query"
-	"vitess.io/vitess/go/vt/sqlparser"
+	// "vitess.io/vitess/go/sqltypes"
+	// querypb "vitess.io/vitess/go/vt/proto/query"
+	// "vitess.io/vitess/go/vt/sqlparser"
+	"github.com/sandeepone/sqlparser"
+	"github.com/sandeepone/sqlparser/dependency/querypb"
+	"github.com/sandeepone/sqlparser/dependency/sqltypes"
 )
 
 // IndexerConfig is the configs for source
@@ -53,6 +57,7 @@ type SourceConfig struct {
 	Indexer     IndexerConfig `toml:"indexer"`
 	Query       string        `toml:"query"`
 	Parts       uint16        `toml:"parts"`
+	JsonTable   string        `toml:"json_table"`
 	StoragePath string        `toml:"storage_path"`
 	details     *SourceConfigDetails
 }
@@ -114,6 +119,9 @@ const (
 	AttrString = "attr_string"
 	// TextField rt_field
 	TextField = "field"
+
+	// ugly hack until json_table is supported - https://github.com/vitessio/vitess/issues/5410
+	JSON_TABLE_CHECK = "join json_table as jt"
 )
 
 // Config is the configuration
@@ -270,7 +278,7 @@ func NewConfig(data string) (*Config, error) {
 		if cfg.StoragePath == "" {
 			cfg.StoragePath = filepath.Join(c.DataDir, "index-storage", index)
 		}
-		cfg.details, err = parseQuery(cfg.Query)
+		cfg.details, err = parseQuery(cfg.Query, cfg)
 		if err != nil {
 			return nil, errors.Annotatef(err, "invalid query for index '%s'", index)
 		}
@@ -353,7 +361,7 @@ func parseSelectQuery(query string) (*SourceConfigDetails, error) {
 	return cfg, nil
 }
 
-func parseQuery(query string) (*SourceConfigDetails, error) {
+func parseQuery(query string, scf *SourceConfig) (*SourceConfigDetails, error) {
 
 	cfg, err := parseSelectQuery(query)
 	if err != nil {
@@ -380,6 +388,22 @@ func parseQuery(query string) (*SourceConfigDetails, error) {
 	}
 
 	cfg.queryTpl = sqlparser.NewParsedQuery(queryAst)
+
+	// ugly hack until json_table is supported - https://github.com/vitessio/vitess/issues/5410
+	if len(scf.JsonTable) > 10 {
+
+		if strings.Contains(cfg.queryTpl.Query, JSON_TABLE_CHECK) {
+			scf.JsonTable = strings.Replace(scf.JsonTable, "\n", "", -1)
+			cfg.queryTpl.Query = strings.Replace(cfg.queryTpl.Query, JSON_TABLE_CHECK, scf.JsonTable, 1)
+
+			offset := strings.Index(cfg.queryTpl.Query, "::doc_id_condition")
+			if offset > 0 {
+				cfg.queryTpl.SetBindLocation(offset, 18)
+			}
+		}
+
+		// fmt.Printf("Query New  %+v\n", cfg.queryTpl)
+	}
 
 	return cfg, nil
 }
