@@ -87,6 +87,7 @@ type statusInfo struct {
 	DeleteQueryDocs      uint64
 	RebuildInProgress    []string
 	RebuildLog           []buildLogRecord
+	Running              bool
 }
 
 var getStatusInfo func() interface{}
@@ -140,6 +141,7 @@ func (s *stat) newStatusInfo() (*statusInfo, error) {
 		DeleteQueryDocs:      s.DeleteQueryDocs.Get(),
 		RebuildInProgress:    s.r.RebuildInProgress(),
 		RebuildLog:           s.RebuildLog,
+		Running:              s.r.isRunning,
 	}, nil
 }
 
