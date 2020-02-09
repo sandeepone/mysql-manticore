@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/juju/errors"
@@ -17,6 +18,10 @@ import (
 	"github.com/siddontang/go-mysql/mysql"
 	"github.com/siddontang/go/sync2"
 	"gopkg.in/birkirb/loggers.v1"
+)
+
+var (
+	healthy int32
 )
 
 type stat struct {
@@ -213,22 +218,30 @@ func (s *stat) run() (err error) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/stat", s)
+	mux.Handle("/healthz", handleHealthz(s.r))
+	mux.Handle("/readyz", handleReadyz(s.r))
+
 	mux.Handle("/debug/vars", expvar.Handler())
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
 	mux.Handle("/rebuild", handleRebuildRedir())
 	mux.Handle("/rebuild/sync", handleRebuild(s.r, true))
 	mux.Handle("/rebuild/async", handleRebuild(s.r, false))
 	mux.Handle("/maint", handleMaint(s.r))
 	mux.Handle("/wait", handleWaitForGTID(s.r))
+
 	stdLogger, logWriter := util.NewStdLogger(s.r.Log)
 	defer logWriter.Close()
 	s.srv = http.Server{Handler: mux, ErrorLog: stdLogger}
 
 	getStatusInfo = s.getStatusInfo
+
+	// signal Kubernetes the server is healthy & ready to receive traffic
+	atomic.StoreInt32(&healthy, 1)
 
 	return s.srv.Serve(s.l)
 }
@@ -245,6 +258,30 @@ func (s *stat) Stop() {
 
 func (s *stat) String() string {
 	return "StatService"
+}
+
+// Kubernetes liveness probe - healthy
+func handleHealthz(r *River) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if atomic.LoadInt32(&healthy) == 1 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		w.WriteHeader(http.StatusServiceUnavailable)
+	})
+}
+
+// Kubernetes readiness probe - healthy and river is running
+func handleReadyz(r *River) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if atomic.LoadInt32(&healthy) == 1 && r.isRunning {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		w.WriteHeader(http.StatusServiceUnavailable)
+	})
 }
 
 func handleRebuildRedir() http.HandlerFunc {
