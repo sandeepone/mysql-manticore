@@ -15,7 +15,7 @@ FROM golang:1.13 AS builder
 
 ADD . /go/src/github.com/sandeepone/mysql-manticore
 
-RUN /go/src/github.com/sandeepone/mysql-manticore \
+RUN cd /go/src/github.com/sandeepone/mysql-manticore \
  && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w  \
     -X main.version=0.1" \
     -a -tags netgo -installsuffix netgo -o mysql-manticore cmd/mysql-manticore/main.go
