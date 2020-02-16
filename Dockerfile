@@ -13,12 +13,11 @@ FROM golang:1.13 AS builder
 #     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
 #     && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
-RUN mkdir -p /go/src/github.com/sandeepone/mysql-manticore
 ADD . /go/src/github.com/sandeepone/mysql-manticore
 
 RUN /go/src/github.com/sandeepone/mysql-manticore \
  && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w  \
-    -X main.Version=0.1" \
+    -X main.version=0.1" \
     -a -tags netgo -installsuffix netgo -o mysql-manticore cmd/mysql-manticore/main.go
 
 ############################
