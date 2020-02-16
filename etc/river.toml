@@ -1,8 +1,8 @@
 # MySQL address, user and password
 # user must have REPLICATION CLIENT and REPLICATION SLAVE privileges
 my_addr = "127.0.0.1:3306"
-my_user = "sphinx"
-my_pass = "sphinx"
+my_user = "manticore"
+my_pass = "manticore"
 my_charset = "utf8mb4"
 
 # list of Sphinx servers
@@ -10,14 +10,14 @@ sph_addr = [
     "127.0.0.1:9306",
 ]
 
-stat_addr = "0.0.0.0:12801"
+stat_addr = "0.0.0.0:8080"
 
 # this is necessary for slave registration
 # make sure it differs from server_id of your MySQL servers
 server_id = 10001
 
 # mysql or mariadb
-flavor = "mariadb"
+flavor = "mysql"
 
 # period to be set via @master_heartbeat_period
 heartbeat_period = "5s"
@@ -50,13 +50,13 @@ use_gtid = true
 skip_file_sync_state = false
 
 # Skip rebuilding index(s)
-skip_rebuild = false
+skip_rebuild = true
 
 # Skip upload the index(s) to search server
-skip_upload_index = false
+skip_upload_index = true
 
 # Skip reload Manticore RT Index command
-skip_reload_rt_index = false
+skip_reload_rt_index = true
 
 [sph_conn_settings]
   disconnect_retry_delay = "1s"
