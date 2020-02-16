@@ -19,7 +19,7 @@ type configTestSuite struct {
 var _ = Suite(&configTestSuite{})
 
 func (s *configTestSuite) TestSimpleSelect(c *C) {
-	d, err := parseQuery("SELECT t.id AS `:id` FROM test t")
+	d, err := parseQuery("SELECT t.id AS `:id` FROM test t", nil)
 	c.Assert(err, IsNil)
 	c.Assert(d.fieldTypes, DeepEquals, map[string]string{"id": DocID})
 	q, err := buildSelectQuery(d.queryTpl, []uint64{1, 2, 3})
@@ -39,7 +39,7 @@ func (s *configTestSuite) TestAnotherSelect(c *C) {
 		"t.f7 AS `m5:attr_multi_64`",
 		"FROM test t",
 	}, " ")
-	d, err := parseQuery(query)
+	d, err := parseQuery(query, nil)
 	c.Assert(err, IsNil)
 	c.Assert(d.fieldTypes, DeepEquals, map[string]string{
 		"id": DocID,
@@ -67,52 +67,52 @@ func (s *configTestSuite) TestAnotherSelect(c *C) {
 }
 
 func (s *configTestSuite) TestInvalidSelect(c *C) {
-	_, err := parseQuery("SELECT to be or not to be FROM test")
+	_, err := parseQuery("SELECT to be or not to be FROM test", nil)
 	c.Assert(err, ErrorMatches, "failed to parse SQL query.*")
 }
 
 func (s *configTestSuite) TestSelectWithoutFrom(c *C) {
-	_, err := parseQuery("SELECT 1 AS `:id`")
+	_, err := parseQuery("SELECT 1 AS `:id`", nil)
 	c.Assert(err.Error(), Equals, "SQL query must have a FROM clause")
 }
 
 func (s *configTestSuite) TestUpdateInsteadOfSelect(c *C) {
-	_, err := parseQuery("UPDATE test SET a = 1")
+	_, err := parseQuery("UPDATE test SET a = 1", nil)
 	c.Assert(err.Error(), Equals, "expected a SELECT query, but got *sqlparser.Update")
 }
 
 func (s *configTestSuite) TestAbsentAlias(c *C) {
-	_, err := parseQuery("SELECT id FROM test")
+	_, err := parseQuery("SELECT id FROM test", nil)
 	c.Assert(err.Error(), Equals, "select expression 'id' must have an alias")
 }
 
 func (s *configTestSuite) TestInvalidColumnAlias(c *C) {
-	_, err := parseQuery("SELECT id AS `id` FROM test")
+	_, err := parseQuery("SELECT id AS `id` FROM test", nil)
 	c.Assert(err.Error(), Equals, "alias 'id' in expression 'id as id' must conform to '[ColumnName]:ColumnType' format")
 }
 
 func (s *configTestSuite) TestInvalidExpressionAlias(c *C) {
-	_, err := parseQuery("SELECT id + 1 AS `:id` FROM test")
+	_, err := parseQuery("SELECT id + 1 AS `:id` FROM test", nil)
 	c.Assert(err.Error(), Equals, "alias ':id' in expression 'id + 1 as `:id`' must conform to 'ColumnName:ColumnType' format (since the aliased expression is not a column name)")
 }
 
 func (s *configTestSuite) TestInvalidColumnType(c *C) {
-	_, err := parseQuery("SELECT id AS `:id`, f AS `:attr_wtf` FROM test")
+	_, err := parseQuery("SELECT id AS `:id`, f AS `:attr_wtf` FROM test", nil)
 	c.Assert(err.Error(), Equals, "invalid column alias ':attr_wtf': invalid index column type: attr_wtf")
 }
 
 func (s *configTestSuite) TestDuplicateColumnName(c *C) {
-	_, err := parseQuery("SELECT id AS `:id`, f1 AS `f:attr_uint`, f2 AS `f:attr_uint` FROM test")
+	_, err := parseQuery("SELECT id AS `:id`, f1 AS `f:attr_uint`, f2 AS `f:attr_uint` FROM test", nil)
 	c.Assert(err.Error(), Equals, "duplicate column name 'f'")
 }
 
 func (s *configTestSuite) TestMultipleIdColumns(c *C) {
-	_, err := parseQuery("SELECT id + 1 AS `id1:id`, id * 2 AS `id2:id` FROM test")
+	_, err := parseQuery("SELECT id + 1 AS `id1:id`, id * 2 AS `id2:id` FROM test", nil)
 	c.Assert(err.Error(), Equals, "columns 'id * 2 as id2' and 'id + 1' cannot both have 'id' type")
 }
 
 func (s *configTestSuite) TestNoIdColumn(c *C) {
-	_, err := parseQuery("SELECT id + 1 AS `id1:attr_uint`, id * 2 AS `id2:attr_uint` FROM test")
+	_, err := parseQuery("SELECT id + 1 AS `id1:attr_uint`, id * 2 AS `id2:attr_uint` FROM test", nil)
 	c.Assert(err.Error(), Equals, "there should be exactly one column with 'id' type, but none found")
 }
 

@@ -17,17 +17,15 @@ require (
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726
 	github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07
-	github.com/siddontang/go-mysql v0.0.0-20191114035249-07ca7840b812
+	github.com/siddontang/go-mysql v0.0.0-20200120044259-a9add8d89449
 	github.com/siddontang/loggers v1.0.4-0.20180516082531-fa51471f8169
 	github.com/sirupsen/logrus v1.4.2
+	github.com/stretchr/testify v1.4.0
 	github.com/thejerf/suture v3.0.2+incompatible
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
 	golang.org/x/sys v0.0.0-20190926180325-855e68c8590b
-	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/birkirb/loggers.v1 v1.1.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 )
-
-replace gopkg.in/birkirb/loggers.v1 v1.1.0 => github.com/siddontang/loggers v1.0.4-0.20180516082531-fa51471f8169

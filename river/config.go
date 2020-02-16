@@ -390,7 +390,7 @@ func parseQuery(query string, scf *SourceConfig) (*SourceConfigDetails, error) {
 	cfg.queryTpl = sqlparser.NewParsedQuery(queryAst)
 
 	// ugly hack until json_table is supported - https://github.com/vitessio/vitess/issues/5410
-	if len(scf.JsonTable) > 10 {
+	if scf != nil && len(scf.JsonTable) > 10 {
 
 		if strings.Contains(cfg.queryTpl.Query, JSON_TABLE_CHECK) {
 			scf.JsonTable = strings.Replace(scf.JsonTable, "\n", "", -1)
