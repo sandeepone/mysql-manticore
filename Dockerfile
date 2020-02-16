@@ -1,7 +1,7 @@
 ############################
 # STEP 1 build executable binary
 ############################
-FROM golang:1.13-stretch AS builder
+FROM golang:1.13 AS builder
 
 # ENV SPHINX_VERSION 3.1.1-612d99f
 # RUN wget https://sphinxsearch.com/files/sphinx-${SPHINX_VERSION}-linux-amd64.tar.gz -O /tmp/sphinxsearch.tar.gz \
