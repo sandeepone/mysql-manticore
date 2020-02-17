@@ -1,7 +1,6 @@
 package river
 
 import (
-	// "fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -261,6 +260,12 @@ func NewConfig(data string) (*Config, error) {
 	c.MyUser = os.ExpandEnv(c.MyUser)
 	c.MyPassword = os.ExpandEnv(c.MyPassword)
 	c.DataDir = os.ExpandEnv(c.DataDir)
+
+	// @Gleez we don't need to rebuild so hardcoded these values
+	c.SkipFileSyncState = true
+	c.SkipRebuild = true
+	c.SkipUploadIndex = true
+	c.SkipReloadRtIndex = true
 
 	if c.IndexUploader.Executable == "" {
 		c.IndexUploader.Executable = "rsync"

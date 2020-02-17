@@ -3,33 +3,51 @@
 ############################
 FROM golang:1.13 AS builder
 
-# ENV SPHINX_VERSION 3.1.1-612d99f
-# RUN wget https://sphinxsearch.com/files/sphinx-${SPHINX_VERSION}-linux-amd64.tar.gz -O /tmp/sphinxsearch.tar.gz \
-#     && mkdir -pv /opt/sphinx && cd /opt/sphinx && tar -xf /tmp/sphinxsearch.tar.gz \
-#     && rm /tmp/sphinxsearch.tar.gz
-
-# ENV DOCKERIZE_VERSION v0.6.1
-# RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-#     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-#     && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-
 ADD . /go/src/github.com/sandeepone/mysql-manticore
 
 RUN cd /go/src/github.com/sandeepone/mysql-manticore \
+ && COMMIT_SHA=$(git rev-parse --short HEAD) \
  && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w  \
-    -X main.version=0.1" \
+    -X main.version=0.2 \
+    -X main.revision=${COMMIT_SHA}" \
     -a -tags netgo -installsuffix netgo -o mysql-manticore cmd/mysql-manticore/main.go
 
 ############################
-# STEP 2 build a release image
+# STEP 2 build a certs image
 ############################
-FROM alpine:3.11
 
-RUN apk add --no-cache curl bash rsync mariadb-client
+# Alpine certs
+FROM alpine:3.11 as alpine
 
-COPY --from=builder /go/src/github.com/sandeepone/mysql-manticore/mysql-manticore /usr/local/bin/
-# COPY --from=builder /usr/local/bin/dockerize /usr/local/bin/
-# COPY --from=builder /opt/sphinx/sphinx-3.1.1/bin/indexer /usr/local/bin/
+RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
+
+# Create appuser
+ENV USER=appuser
+ENV UID=10001
+
+# See https://stackoverflow.com/a/55757473/12429735
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+############################
+# STEP 3 build a release image
+############################
+FROM scratch
+MAINTAINER Sandeep Sangamreddi <sandeepone@gmail.com>
+
+# Import from builder.
+COPY --from=alpine /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=alpine /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=alpine /etc/passwd /etc/passwd
+COPY --from=alpine /etc/group /etc/group
+
+COPY --from=builder /go/src/github.com/sandeepone/mysql-manticore/mysql-manticore /usr/bin/
 COPY etc/river.toml /etc/mysql-manticore/river.toml
 COPY etc/dict /etc/mysql-manticore/dict
 
@@ -38,6 +56,8 @@ VOLUME /var/river
 
 EXPOSE 8080
 
-# CMD dockerize -wait tcp://mysql:3306 -timeout 120s /usr/local/bin/mysql-manticore -config /etc/mysql-manticore/river.toml -data-dir /var/river -my-addr mysql:3306 -sph-addr sphinx:9308
+# Use an unprivileged user.
+USER appuser:appuser
+
 
 ENTRYPOINT ["mysql-manticore", "-config", "/etc/mysql-manticore/river.toml"]
