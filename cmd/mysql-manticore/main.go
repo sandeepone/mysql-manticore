@@ -7,11 +7,14 @@ import (
 	"os/signal"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/juju/errors"
 	"github.com/thejerf/suture"
+
+	"github.com/gleez/pkg/httplib"
 
 	"github.com/sandeepone/mysql-manticore/river"
 	"github.com/sandeepone/mysql-manticore/util"
@@ -26,6 +29,15 @@ var (
 	// LDFLAGS should overwrite these variables in build time.
 	version  string
 	revision string
+
+	done chan struct{}
+	mu   sync.Mutex // guards leader
+
+	host string = hostname()
+
+	rootSup    *suture.Supervisor
+	r          *river.River
+	riverToken suture.ServiceToken
 )
 
 type strList []string
@@ -107,12 +119,12 @@ func run() (err error) {
 		cfg.SphAddr = sphAddr
 	}
 
-	r, err := river.NewRiver(cfg, log.Logger, rebuildAndExit)
+	r, err = river.NewRiver(cfg, log.Logger, rebuildAndExit)
 	if err != nil {
 		return err
 	}
 
-	rootSup := suture.New("root", suture.Spec{
+	rootSup = suture.New("root", suture.Spec{
 		FailureThreshold: -1,
 		FailureBackoff:   10 * time.Second,
 		Timeout:          time.Minute,
@@ -129,7 +141,7 @@ func run() (err error) {
 		go runMasterLoop()
 
 	} else {
-		rootSup.Add(r)
+		riverToken = rootSup.Add(r)
 	}
 
 	select {
@@ -147,20 +159,50 @@ func run() (err error) {
 }
 
 // k8s run master loop will check for master once per 30 seconds.
-func runMasterLoop(rootSup *suture.Supervisor) {
+func runMasterLoop() {
 	ticker := time.NewTicker(30 * time.Second)
 	for {
 		select {
 		case <-done:
 			return
 		case <-ticker.C:
-			fetchLeader(rootSup)
+			fetchLeader()
 		}
 	}
 }
 
-func fetchLeader(rootSup *suture.Supervisor) {
+func fetchLeader() {
+	mu.Lock()
+	defer mu.Unlock()
 
+	var leader string
+	if err := httplib.Get(LEADER_ELECT_ADDR).Setting(httplib.CustomSetting).ToJSON(&leader); err != nil {
+		log.Errorf("Error fetchLeader %v", err)
+		return
+	}
+
+	if len(leader) > 3 {
+		// this is leader and river not running - start river service
+		if leader == host && !r.IsRunning() {
+			riverToken = rootSup.Add(r)
+		}
+
+		// this is not leader and river is running - stop river service
+		if leader != host && r.IsRunning() {
+			if err := rootSup.RemoveAndWait(riverToken, 1*time.Minute); err != nil {
+				log.Errorf("Error fetchLeader stop service [%s] %v", host, err)
+			}
+		}
+	}
+}
+
+func hostname() string {
+	name, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return name
 }
 
 func main() {

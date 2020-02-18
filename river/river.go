@@ -290,6 +290,10 @@ func (r *River) String() string {
 	return "MainRiverService"
 }
 
+func (r *River) IsRunning() bool {
+	return r.isRunning
+}
+
 func (r *River) initMasterState() (err error) {
 	m := r.master
 	err = m.load()

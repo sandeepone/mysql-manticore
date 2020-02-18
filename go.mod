@@ -7,6 +7,7 @@ require (
 	github.com/birkirb/loggers-mapper-logrus v0.0.0-20180326232643-461f2d8e6f72
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v0.0.0-20171013212420-1d4478f51bed
+	github.com/gleez/pkg v0.0.0-20200218023659-166e6bcfab6c // indirect
 	github.com/gocarina/gocsv v0.0.0-20191122093448-c6a9c812ac26
 	github.com/juju/errors v0.0.0-20170703010042-c7d06af17c68
 	github.com/kr/pretty v0.1.0
@@ -23,9 +24,10 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/thejerf/suture v3.0.2+incompatible
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
-	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
+	golang.org/x/crypto v0.0.0-20200214034016-1d94cc7ab1c6
 	golang.org/x/sys v0.0.0-20190926180325-855e68c8590b
 	gopkg.in/birkirb/loggers.v1 v1.1.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 )
+
+replace gopkg.in/russross/blackfriday.v2 v2.0.1 => github.com/russross/blackfriday/v2 v2.0.1
