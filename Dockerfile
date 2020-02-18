@@ -51,13 +51,10 @@ COPY --from=builder /go/src/github.com/sandeepone/mysql-manticore/mysql-manticor
 COPY etc/river.toml /etc/mysql-manticore/river.toml
 COPY etc/dict /etc/mysql-manticore/dict
 
-RUN mkdir -p /var/river
-VOLUME /var/river
 
 EXPOSE 8080
 
 # Use an unprivileged user.
 USER appuser:appuser
-
 
 ENTRYPOINT ["mysql-manticore", "-config", "/etc/mysql-manticore/river.toml"]

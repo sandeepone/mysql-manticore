@@ -209,6 +209,6 @@ charset_table     = 0..9, A..Z->a..z, _, &, a..z, \
   """
 
 [data_source.vacancy.indexer.dictionaries]
-  exceptions = "/etc/go-mysql-sphinx/dict/exceptions.txt"
-  stopwords = "/etc/go-mysql-sphinx/dict/stopwords.txt"
-  wordforms = "/etc/go-mysql-sphinx/dict/wordforms.txt"
+  exceptions = "/etc/mysql-manticore/dict/exceptions.txt"
+  stopwords = "/etc/mysql-manticore/dict/stopwords.txt"
+  wordforms = "/etc/mysql-manticore/dict/wordforms.txt"
