@@ -10,10 +10,10 @@ import (
 
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
-	"github.com/sandeepone/mysql-manticore/sphinx"
-	// "github.com/satori/go.uuid"
-	"github.com/siddontang/go-mysql/canal"
 	"github.com/thejerf/suture"
+
+	"github.com/sandeepone/mysql-manticore/sphinx"
+	"github.com/siddontang/go-mysql/canal"
 
 	"gopkg.in/birkirb/loggers.v1"
 	"gopkg.in/birkirb/loggers.v1/log"
@@ -36,8 +36,6 @@ type River struct {
 	Cancel context.CancelFunc
 
 	sph []*sphinx.SphConn
-
-	// balancer *BalancerClient
 
 	sphinxService *SphinxService
 	syncService   *SyncService
@@ -211,11 +209,7 @@ func (r *River) run() error {
 		return errors.Trace(err)
 	}
 
-	if r.rebuildAndExit {
-		err = r.rebuildAll(nil, "rebuild-and-exit option is used")
-	} else if r.master.needPositionReset {
-		err = r.rebuildAll(nil, "reset flag was set")
-	} else if err = r.sphinxService.LoadSyncState(r.master.syncState()); err != nil {
+	if err = r.sphinxService.LoadSyncState(r.master.syncState()); err != nil {
 		err = r.rebuildAll(nil, fmt.Sprintf("one or more sphinx backends are not up to date: %v", err))
 	} else {
 		err = r.rebuildIfNotReady(nil)
@@ -224,14 +218,6 @@ func (r *River) run() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-
-	if r.rebuildAndExit {
-		return errors.Trace(ErrRebuildAndExitFlagSet)
-	}
-
-	// if r.master.skipFileSyncState {
-	// 	r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
-	// }
 
 	r.master.needPositionReset = false
 
@@ -382,30 +368,6 @@ func (r *River) disableBuildMode() error {
 	return errors.Trace(r.syncService.SwitchBuildMode(false, switchBuildModeTimeout))
 }
 
-// func (r *River) startRebuildingIndexGroup(ctx context.Context, build indexGroupBuild) error {
-// 	var cancelFunc context.CancelFunc
-// 	if ctx == nil {
-// 		ctx, cancelFunc = context.WithCancel(r.ctx)
-// 	}
-
-// 	build.logger.Info("rebuild start")
-// 	// r.StatService.logRebuildStart(build)
-
-// 	err := rebuildIndexGroup(ctx, r, build)
-// 	if err != nil {
-// 		build.logger.Errorf("rebuild failed: %s", errors.ErrorStack(err))
-// 	} else {
-// 		build.logger.Info("rebuild done")
-// 	}
-
-// 	// r.StatService.logRebuildFinish(build.id, err)
-// 	if cancelFunc != nil {
-// 		cancelFunc()
-// 	}
-
-// 	return err
-// }
-
 func (r *River) checkAllIndexesForOptimize() {
 	for index, indexConfig := range r.c.DataSource {
 		err := r.sphinxService.CheckIndexForOptimize(index, indexConfig.Parts)
@@ -422,14 +384,6 @@ func (r *River) rebuildAll(ctx context.Context, reason string) error {
 		return nil
 	}
 
-	// return r.rebuildIfNot(
-	// 	ctx,
-	// 	reason,
-	// 	func(string, *SourceConfig) (bool, error) {
-	// 		return false, nil
-	// 	},
-	// )
-
 	return nil
 }
 
@@ -441,56 +395,6 @@ func (r *River) rebuildIfNotReady(ctx context.Context) error {
 	// return r.rebuildIfNot(ctx, "index is not ready", isReady)
 	return nil
 }
-
-// func (r *River) rebuildIfNot(
-// 	ctx context.Context,
-// 	reason string,
-// 	predicate func(string, *SourceConfig) (bool, error),
-// ) (err error) {
-
-// 	indexes := []string{}
-// 	for index, cfg := range r.c.DataSource {
-// 		skipRebuild, err := predicate(index, cfg)
-// 		if err != nil {
-// 			return errors.Trace(err)
-// 		}
-
-// 		if !skipRebuild {
-// 			indexes = append(indexes, index)
-// 		}
-// 	}
-
-// 	if len(indexes) == 0 {
-// 		return nil
-// 	}
-
-// 	if r.c.SkipRebuild {
-// 		r.l.Info("use skip_rebuild option, skipped rebuildIfNotReady")
-// 		return nil
-// 	}
-
-// 	var rebuildState *RebuildStartState
-// 	if len(indexes) == len(r.c.DataSource) {
-// 		rebuildState, err = NewRebuildStartState(r.canal)
-// 		if err != nil {
-// 			return errors.Trace(err)
-// 		}
-// 		r.l.Infof("rebuild indexes from GTID: %s", rebuildState.gtid)
-// 	}
-
-// 	r.l.Infof("will rebuild indexes %s: %s", strings.Join(indexes, ","), reason)
-
-// 	build, err := newIndexGroupBuild(r.c, r.Log, indexes, uuid.NewV1, rebuildState)
-// 	if err != nil {
-// 		return errors.Trace(err)
-// 	}
-// 	err = r.startRebuildingIndexGroup(ctx, *build)
-// 	if err != nil {
-// 		return errors.Trace(err)
-// 	}
-
-// 	return nil
-// }
 
 func (r *River) prepareRule() error {
 	if r.c.IngestRules != nil {

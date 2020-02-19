@@ -12,7 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
-	"github.com/sandeepone/mysql-manticore/util"
+	// "github.com/sandeepone/mysql-manticore/util"
 
 	// "vitess.io/vitess/go/sqltypes"
 	// querypb "vitess.io/vitess/go/vt/proto/query"
@@ -22,27 +22,27 @@ import (
 	"github.com/sandeepone/sqlparser/dependency/sqltypes"
 )
 
-// IndexerConfig is the configs for source
-type IndexerConfig struct {
-	MemLimit           string            `toml:"mem_limit"`
-	MaxIops            string            `toml:"max_iops"`
-	MaxIosize          string            `toml:"max_iosize"`
-	MaxXmlpipe2Field   string            `toml:"max_xmlpipe2_field"`
-	WriteBuffer        string            `toml:"write_buffer"`
-	MaxFileFieldBuffer string            `toml:"max_file_field_buffer"`
-	OnFileFieldError   string            `toml:"on_file_field_error"`
-	LemmatizerCache    string            `toml:"lemmatizer_cache"`
-	GroupConcatMaxLen  uint64            `toml:"group_concat_max_len"`
-	Tokenizer          string            `toml:"tokenizer"`
-	Dictionaries       IndexDictionaries `toml:"dictionaries"`
-}
+// // IndexerConfig is the configs for source
+// type IndexerConfig struct {
+// 	MemLimit           string            `toml:"mem_limit"`
+// 	MaxIops            string            `toml:"max_iops"`
+// 	MaxIosize          string            `toml:"max_iosize"`
+// 	MaxXmlpipe2Field   string            `toml:"max_xmlpipe2_field"`
+// 	WriteBuffer        string            `toml:"write_buffer"`
+// 	MaxFileFieldBuffer string            `toml:"max_file_field_buffer"`
+// 	OnFileFieldError   string            `toml:"on_file_field_error"`
+// 	LemmatizerCache    string            `toml:"lemmatizer_cache"`
+// 	GroupConcatMaxLen  uint64            `toml:"group_concat_max_len"`
+// 	Tokenizer          string            `toml:"tokenizer"`
+// 	Dictionaries       IndexDictionaries `toml:"dictionaries"`
+// }
 
-// IndexUploaderConfig ...
-type IndexUploaderConfig struct {
-	Executable string            `toml:"executable"`
-	Arguments  []TomlGoTemplate  `toml:"arguments"`
-	HostMap    map[string]string `toml:"host_map"`
-}
+// // IndexUploaderConfig ...
+// type IndexUploaderConfig struct {
+// 	Executable string            `toml:"executable"`
+// 	Arguments  []TomlGoTemplate  `toml:"arguments"`
+// 	HostMap    map[string]string `toml:"host_map"`
+// }
 
 // IndexMaintenanceConfig ...
 type IndexMaintenanceConfig struct {
@@ -53,11 +53,11 @@ type IndexMaintenanceConfig struct {
 
 // SourceConfig contains all info that's needed to build or update an index
 type SourceConfig struct {
-	Indexer     IndexerConfig `toml:"indexer"`
-	Query       string        `toml:"query"`
-	Parts       uint16        `toml:"parts"`
-	JsonTable   string        `toml:"json_table"`
-	StoragePath string        `toml:"storage_path"`
+	// Indexer     IndexerConfig `toml:"indexer"`
+	Query       string `toml:"query"`
+	Parts       uint16 `toml:"parts"`
+	JsonTable   string `toml:"json_table"`
+	StoragePath string `toml:"storage_path"`
 	details     *SourceConfigDetails
 }
 
@@ -79,21 +79,21 @@ type SphConnSettings struct {
 	OverloadRetryDelay   TomlDuration `toml:"overload_retry_delay"`
 }
 
-// BalancerConfig details for connecting to the load balancer
-// Used for disabling a server during RELOAD-TRUNCATE-ATTACH sequence
-// Only HAProxy is supported
-type BalancerConfig struct {
-	Addr                []string     `toml:"addr"`
-	BackendName         []string     `toml:"backend"`
-	PauseAfterDisabling TomlDuration `toml:"pause_after_disabling"`
-	PauseBeforeEnabling TomlDuration `toml:"pause_before_enabling"`
-	Timeout             TomlDuration `toml:"timeout"`
-	UseTLS              bool         `toml:"use_tls"`
-	ServerCAFile        string       `toml:"server_ca_file"`
-	ClientCertFile      string       `toml:"client_cert_file"`
-	ClientKeyFile       string       `toml:"client_key_file"`
-	TLSServerName       string       `toml:"tls_server_name"`
-}
+// // BalancerConfig details for connecting to the load balancer
+// // Used for disabling a server during RELOAD-TRUNCATE-ATTACH sequence
+// // Only HAProxy is supported
+// type BalancerConfig struct {
+// 	Addr                []string     `toml:"addr"`
+// 	BackendName         []string     `toml:"backend"`
+// 	PauseAfterDisabling TomlDuration `toml:"pause_after_disabling"`
+// 	PauseBeforeEnabling TomlDuration `toml:"pause_before_enabling"`
+// 	Timeout             TomlDuration `toml:"timeout"`
+// 	UseTLS              bool         `toml:"use_tls"`
+// 	ServerCAFile        string       `toml:"server_ca_file"`
+// 	ClientCertFile      string       `toml:"client_cert_file"`
+// 	ClientKeyFile       string       `toml:"client_key_file"`
+// 	TLSServerName       string       `toml:"tls_server_name"`
+// }
 
 const (
 	// DocID document id
@@ -171,36 +171,10 @@ type Config struct {
 	SkipReloadRtIndex bool `toml:"skip_reload_rt_index"`
 }
 
-// IndexMysqlSettings settings for connection to mysql from indexer
-type IndexMysqlSettings struct {
-	Host    string
-	Port    uint16
-	User    string
-	Pass    string
-	Charset string
-}
-
 // IndexConfigField field of an index as it's seen in the indexer config
 type IndexConfigField struct {
 	Name string
 	Type string
-}
-
-// IndexDictionaries file path for each of the dictionary file
-type IndexDictionaries struct {
-	Exceptions string
-	Stopwords  string
-	Wordforms  string
-}
-
-// IndexSettings struct for templating the indexer config
-type IndexSettings struct {
-	Name    string
-	RTName  string
-	Indexer IndexerConfig
-	Mysql   IndexMysqlSettings
-	Fields  []IndexConfigField
-	Query   string
 }
 
 // NewConfigWithFile creates a Config from file.
@@ -233,21 +207,6 @@ func splitAddr(addr string, defaultPort int) (string, uint16, error) {
 	return host, uint16(port), nil
 }
 
-func newIndexerMysqlSettings(c *Config) (*IndexMysqlSettings, error) {
-	host, port, err := splitAddr(c.MyAddr, 3306)
-	if err != nil {
-		return nil, errors.Annotatef(err, "invalid mysql address: %s", c.MyAddr)
-	}
-
-	return &IndexMysqlSettings{
-		Host:    host,
-		Port:    port,
-		User:    c.MyUser,
-		Pass:    c.MyPassword,
-		Charset: c.MyCharset,
-	}, nil
-}
-
 // NewConfig creates a Config from data.
 func NewConfig(data string) (*Config, error) {
 	var c Config
@@ -266,15 +225,6 @@ func NewConfig(data string) (*Config, error) {
 	c.SkipRebuild = true
 	c.SkipUploadIndex = true
 	c.SkipReloadRtIndex = true
-
-	// if c.IndexUploader.Executable == "" {
-	// 	c.IndexUploader.Executable = "rsync"
-	// }
-	// for _, arg := range c.IndexUploader.Arguments {
-	// 	if _, err = expandUploaderArg(arg, UploaderArgSubst{}); err != nil {
-	// 		return nil, errors.Annotate(err, "invalid index_uploader.arguments")
-	// 	}
-	// }
 
 	for index, cfg := range c.DataSource {
 		if cfg.Parts < 1 {
@@ -524,66 +474,6 @@ func buildSelectQuery(queryTpl *sqlparser.ParsedQuery, ids []uint64) (string, er
 		return "", errors.Trace(err)
 	}
 	return string(queryBuf), nil
-}
-
-func buildIndexingQuery(tpl *sqlparser.ParsedQuery, parts, chunkNo uint16) (string, error) {
-	partsVar, err := sqltypes.BuildBindVariable(uint64(parts))
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-	chunkVar, err := sqltypes.BuildBindVariable(uint64(chunkNo))
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-	query, err := tpl.GenerateQuery(
-		map[string]*querypb.BindVariable{
-			"parts": partsVar,
-			"chunk": chunkVar,
-		},
-		make(map[string]sqlparser.Encodable),
-	)
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-	return string(query), nil
-}
-
-func buildIndexerSettings(m IndexMysqlSettings, index string, c SourceConfig) ([]IndexSettings, error) {
-	details, err := parseSelectQuery(c.Query)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	if c.Parts > 1 {
-		details.queryAst.AddWhere(
-			&sqlparser.ComparisonExpr{
-				Operator: "=",
-				Left: &sqlparser.BinaryExpr{
-					Operator: "%",
-					Left:     *details.docIDExpr,
-					Right:    sqlparser.ListArg(":parts"),
-				},
-				Right: sqlparser.ListArg(":chunk"),
-			},
-		)
-	}
-	queryTpl := sqlparser.NewParsedQuery(details.queryAst)
-	settings := make([]IndexSettings, c.Parts)
-	var chunkNo uint16
-	for chunkNo = 0; chunkNo < c.Parts; chunkNo++ {
-		query, err := buildIndexingQuery(queryTpl, c.Parts, chunkNo)
-		if err != nil {
-			return nil, errors.Annotatef(err, "failed to build indexing query (index %s chunk %d)", index, chunkNo)
-		}
-		settings[chunkNo] = IndexSettings{
-			Name:    util.IndexChunkName(util.PlainIndexName(index), c.Parts, chunkNo),
-			RTName:  util.IndexChunkName(index, c.Parts, chunkNo),
-			Fields:  details.fieldList,
-			Mysql:   m,
-			Query:   query,
-			Indexer: c.Indexer,
-		}
-	}
-	return settings, nil
 }
 
 func sqlExprToString(e sqlparser.SQLNode) string {
