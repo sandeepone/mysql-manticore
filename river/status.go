@@ -215,7 +215,7 @@ func (s *stat) run() (err error) {
 		s.log.Errorf("error creating listener at addr %s: %v", addr, err)
 		return
 	}
-	s.log.Infof("started status http server at %s", addr)
+	s.log.Infof("Started status http server at %s", addr)
 
 	s.lastRowEvent = time.Now()
 	s.startedAt = time.Now()
@@ -232,9 +232,10 @@ func (s *stat) run() (err error) {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-	mux.Handle("/rebuild", handleRebuildRedir())
-	mux.Handle("/rebuild/sync", handleRebuild(s.r, true))
-	mux.Handle("/rebuild/async", handleRebuild(s.r, false))
+	// mux.Handle("/rebuild", handleRebuildRedir())
+	// mux.Handle("/rebuild/sync", handleRebuild(s.r, true))
+	// mux.Handle("/rebuild/async", handleRebuild(s.r, false))
+
 	mux.Handle("/maint", handleMaint(s.r))
 	mux.Handle("/wait", handleWaitForGTID(s.r))
 
@@ -334,29 +335,34 @@ func handleRebuild(r *River, sync bool) http.HandlerFunc {
 func handleMaint(r *River) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 		if req.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			w.Write([]byte("unexpected method\n"))
 			return
 		}
+
 		index := req.URL.Query().Get("index")
 		if index == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("index not specified\n"))
 			return
 		}
+
 		dataSource, exists := r.c.DataSource[index]
 		if !exists {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(fmt.Sprintf("index %s not found\n", index)))
 			return
 		}
+
 		err := r.sphinxService.CheckIndexForOptimize(index, dataSource.Parts)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(errors.ErrorStack(err) + "\n"))
 			return
 		}
+
 		w.WriteHeader(http.StatusNoContent)
 	})
 }
@@ -364,11 +370,13 @@ func handleMaint(r *River) http.HandlerFunc {
 func handleWaitForGTID(r *River) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 		if req.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			w.Write([]byte("unexpected method\n"))
 			return
 		}
+
 		req.ParseForm()
 		gtidString := req.PostForm.Get("gtid")
 		if gtidString == "" {
@@ -376,12 +384,14 @@ func handleWaitForGTID(r *River) http.HandlerFunc {
 			w.Write([]byte("gtid not specified\n"))
 			return
 		}
+
 		gtid, err := mysql.ParseGTIDSet(r.c.Flavor, gtidString)
 		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			w.Write([]byte("invalid gtid specified\n"))
 			return
 		}
+
 		timeoutString := req.PostForm.Get("timeout")
 		var timerC <-chan time.Time
 		if timeoutString != "" {
