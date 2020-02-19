@@ -91,11 +91,11 @@ func (s *SphinxService) LoadSyncState(defaultState sphinx.SyncState) error {
 		return errors.Annotatef(errSphinxDisconnected, "error loading synchronization state")
 	}
 	if s.riverInstance.c.SkipSphSyncState {
-		log.Info("use skip_sph_sync_state option, skipped loading synchronization state from sphinx")
+		log.Info("SphinxService: use skip_sph_sync_state option, skipped loading synchronization state from sphinx")
 		return nil
 	}
 	if len(s.sph) == 0 {
-		log.Info("no sphinx backends configured, skipped loading synchronization state from sphinx")
+		log.Info("SphinxService: no sphinx backends configured, skipped loading synchronization state from sphinx")
 		return nil
 	}
 	state, err := sphinx.LoadSyncState(s.sph, defaultState)
@@ -103,14 +103,14 @@ func (s *SphinxService) LoadSyncState(defaultState sphinx.SyncState) error {
 		return errors.Trace(err)
 	}
 	if state == nil {
-		log.Info("no synchronization state saved on sphinx backends, using already loaded state")
+		log.Info("SphinxService: no synchronization state saved on sphinx backends, using already loaded state")
 		return nil
 	}
 	s.riverInstance.master.updatePosition(positionEvent{
 		gtid: state.GTID,
 		pos:  state.Position,
 	})
-	log.Infof("updated master position to %s", state.GTID)
+	log.Infof("SphinxService: updated master position to %s", state.GTID)
 	return nil
 }
 
@@ -142,10 +142,16 @@ func (s *SphinxService) IndexIsReady(index string, parts uint16) (bool, error) {
 func (s *SphinxService) ReloadRtIndex(build indexGroupBuild) error {
 	s.sphm.Lock()
 	defer s.sphm.Unlock()
+
 	if s.sph == nil {
 		return errors.Annotatef(errSphinxDisconnected, "error reloading after the build %s", build.id)
 	}
-	return errors.Trace(s.riverInstance.balancer.RollingReloadIndex(s.sph, build))
+
+	if s.riverInstance.balancer != nil {
+		return errors.Trace(s.riverInstance.balancer.RollingReloadIndex(s.sph, build))
+	}
+
+	return nil
 }
 
 // CheckIndexForOptimize ...

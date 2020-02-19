@@ -64,7 +64,7 @@ func (m *masterState) load() (err error) {
 	}
 
 	if m.skipFileSyncState {
-		log.Info("use skip_file_sync_state option, skipped loading synchronization state from file")
+		// log.Info("use skip_file_sync_state option, skipped loading synchronization state from file")
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (m *masterState) save() error {
 	defer m.Unlock()
 
 	if m.skipFileSyncState {
-		// log.Info("use skip_file_sync_state option, skipped loading synchronization state from file")
+		// log.Info("use skip_file_sync_state option, skipped saving synchronization state from file")
 		return nil
 	}
 

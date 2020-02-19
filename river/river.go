@@ -114,13 +114,14 @@ func NewRiver(c *Config, log loggers.Contextual, rebuildAndExit bool) (*River, e
 		return nil, errors.Trace(err)
 	}
 
-	if r.balancer, err = NewBalancerClient(r.c.Balancer); err != nil {
-		return nil, errors.Trace(err)
-	}
+	// if r.balancer, err = NewBalancerClient(r.c.Balancer); err != nil {
+	// 	return nil, errors.Trace(err)
+	// }
 
 	r.master = newMasterState(r.c)
 
-	r.StatService = &stat{r: r, RebuildLog: make([]buildLogRecord, 0)}
+	// r.StatService = &stat{r: r, RebuildLog: make([]buildLogRecord, 0)}
+	r.StatService = &stat{r: r}
 
 	r.sup = suture.New("river", suture.Spec{
 		Timeout: 3 * time.Second,
@@ -185,6 +186,8 @@ func (r *River) Serve() {
 	r.isRunning = true
 	r.m.Unlock()
 
+	r.l.Infof("Starting")
+
 	err := r.run()
 	if err != nil {
 		r.FatalErrC <- err
@@ -226,9 +229,9 @@ func (r *River) run() error {
 		return errors.Trace(ErrRebuildAndExitFlagSet)
 	}
 
-	if r.master.skipFileSyncState {
-		r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
-	}
+	// if r.master.skipFileSyncState {
+	// 	r.l.Infof("use skip_file_sync_state option, resetting master state to position: %s", r.master.gtidString())
+	// }
 
 	r.master.needPositionReset = false
 
@@ -386,7 +389,7 @@ func (r *River) startRebuildingIndexGroup(ctx context.Context, build indexGroupB
 	}
 
 	build.logger.Info("rebuild start")
-	r.StatService.logRebuildStart(build)
+	// r.StatService.logRebuildStart(build)
 
 	err := rebuildIndexGroup(ctx, r, build)
 	if err != nil {
@@ -395,7 +398,7 @@ func (r *River) startRebuildingIndexGroup(ctx context.Context, build indexGroupB
 		build.logger.Info("rebuild done")
 	}
 
-	r.StatService.logRebuildFinish(build.id, err)
+	// r.StatService.logRebuildFinish(build.id, err)
 	if cancelFunc != nil {
 		cancelFunc()
 	}
@@ -429,10 +432,6 @@ func (r *River) rebuildAll(ctx context.Context, reason string) error {
 }
 
 func (r *River) rebuildIfNotReady(ctx context.Context) error {
-	if r.c.SkipRebuild {
-		r.l.Info("use skip_rebuild option, skipped rebuildIfNotReady")
-		return nil
-	}
 
 	isReady := func(index string, cfg *SourceConfig) (bool, error) {
 		return r.sphinxService.IndexIsReady(index, cfg.Parts)
@@ -459,6 +458,11 @@ func (r *River) rebuildIfNot(
 	}
 
 	if len(indexes) == 0 {
+		return nil
+	}
+
+	if r.c.SkipRebuild {
+		r.l.Info("use skip_rebuild option, skipped rebuildIfNotReady")
 		return nil
 	}
 

@@ -85,9 +85,9 @@ type statusInfo struct {
 	DeleteAffectedRows   uint64
 	DeleteQueries        uint64
 	DeleteQueryDocs      uint64
-	RebuildInProgress    []string
-	RebuildLog           []buildLogRecord
-	Running              bool
+	// RebuildInProgress    []string
+	// RebuildLog           []buildLogRecord
+	Running bool
 }
 
 var getStatusInfo func() interface{}
@@ -110,11 +110,13 @@ func (s *stat) newStatusInfo() (*statusInfo, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+
 	now := time.Now()
 	uptime := now.Sub(s.startedAt)
 	lag := now.Sub(s.lastRowEvent)
 	readPos := s.r.master.position()
 	readGTID := s.r.master.gtidSet()
+
 	return &statusInfo{
 		Uptime:               uptime.String(),
 		UptimeNano:           uptime.Nanoseconds(),
@@ -139,9 +141,9 @@ func (s *stat) newStatusInfo() (*statusInfo, error) {
 		DeleteAffectedRows:   s.DeleteAffectedRows.Get(),
 		DeleteQueries:        s.DeleteQueries.Get(),
 		DeleteQueryDocs:      s.DeleteQueryDocs.Get(),
-		RebuildInProgress:    s.r.RebuildInProgress(),
-		RebuildLog:           s.RebuildLog,
-		Running:              s.r.isRunning,
+		// RebuildInProgress:    s.r.RebuildInProgress(),
+		// RebuildLog:           s.RebuildLog,
+		Running: s.r.isRunning,
 	}, nil
 }
 

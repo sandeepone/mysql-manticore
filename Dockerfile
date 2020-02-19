@@ -51,7 +51,6 @@ COPY --from=builder /go/src/github.com/sandeepone/mysql-manticore/mysql-manticor
 COPY etc/river.toml /etc/mysql-manticore/river.toml
 COPY etc/dict /etc/mysql-manticore/dict
 
-
 EXPOSE 8080
 
 # Use an unprivileged user.
