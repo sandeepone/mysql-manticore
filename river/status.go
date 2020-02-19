@@ -50,16 +50,16 @@ type stat struct {
 	DeleteQueries       sync2.AtomicUint64
 	DeleteQueryDocs     sync2.AtomicUint64
 
-	RebuildLog []buildLogRecord
+	// RebuildLog []buildLogRecord
 }
 
-type buildLogRecord struct {
-	ID         string
-	IndexList  []string
-	StartedAt  time.Time
-	FinishedAt *time.Time
-	Success    bool
-}
+// type buildLogRecord struct {
+// 	ID         string
+// 	IndexList  []string
+// 	StartedAt  time.Time
+// 	FinishedAt *time.Time
+// 	Success    bool
+// }
 
 type statusInfo struct {
 	Uptime               string

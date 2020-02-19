@@ -37,7 +37,7 @@ type River struct {
 
 	sph []*sphinx.SphConn
 
-	balancer *BalancerClient
+	// balancer *BalancerClient
 
 	sphinxService *SphinxService
 	syncService   *SyncService
