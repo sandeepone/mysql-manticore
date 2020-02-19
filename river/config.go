@@ -132,11 +132,11 @@ type Config struct {
 
 	SphAddr []string `toml:"sph_addr"`
 
-	Balancer BalancerConfig `toml:"balancer"`
+	// Balancer BalancerConfig `toml:"balancer"`
 
 	MaintenanceConfig IndexMaintenanceConfig `toml:"maintenance"`
 
-	IndexUploader IndexUploaderConfig `toml:"index_uploader"`
+	// IndexUploader IndexUploaderConfig `toml:"index_uploader"`
 
 	SphConnSettings SphConnSettings `toml:"sph_conn_settings"`
 
@@ -267,14 +267,14 @@ func NewConfig(data string) (*Config, error) {
 	c.SkipUploadIndex = true
 	c.SkipReloadRtIndex = true
 
-	if c.IndexUploader.Executable == "" {
-		c.IndexUploader.Executable = "rsync"
-	}
-	for _, arg := range c.IndexUploader.Arguments {
-		if _, err = expandUploaderArg(arg, UploaderArgSubst{}); err != nil {
-			return nil, errors.Annotate(err, "invalid index_uploader.arguments")
-		}
-	}
+	// if c.IndexUploader.Executable == "" {
+	// 	c.IndexUploader.Executable = "rsync"
+	// }
+	// for _, arg := range c.IndexUploader.Arguments {
+	// 	if _, err = expandUploaderArg(arg, UploaderArgSubst{}); err != nil {
+	// 		return nil, errors.Annotate(err, "invalid index_uploader.arguments")
+	// 	}
+	// }
 
 	for index, cfg := range c.DataSource {
 		if cfg.Parts < 1 {

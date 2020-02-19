@@ -65,7 +65,6 @@ func run() (err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 
 	var configFile string
-	var dataDir string
 	var myAddr string
 	var sphAddr strList
 	var logLevel string
@@ -75,7 +74,6 @@ func run() (err error) {
 	var k8Leader bool
 
 	flags.StringVar(&configFile, "config", "../../temp/etc/river.toml", "config file")
-	flags.StringVar(&dataDir, "data-dir", "../../temp/data", "directory for storing local application state")
 	flags.StringVar(&myAddr, "my-addr", "", "MySQL replica address")
 	flags.Var(&sphAddr, "sph-addr", "Manticore address")
 	flags.StringVar(&logLevel, "log-level", "info", "log level")
@@ -111,10 +109,6 @@ func run() (err error) {
 		return err
 	}
 
-	if dataDir != "" {
-		cfg.DataDir = dataDir
-	}
-
 	if myAddr != "" {
 		cfg.MyAddr = myAddr
 	}
@@ -147,6 +141,7 @@ func run() (err error) {
 		go runMasterLoop()
 	} else {
 		log.Infof("Starting without cluster support")
+
 		riverToken = rootSup.Add(r)
 	}
 
@@ -196,9 +191,9 @@ func fetchLeader() {
 
 		// this is not leader and river is running - stop river service
 		if leader.Name != host && r.IsRunning() {
-			log.Infof("Leadership changed old leader %s", leader.Name)
+			log.Infof("Leadership changed leader %s", leader.Name)
 
-			if err := rootSup.RemoveAndWait(riverToken, 1*time.Minute); err != nil {
+			if err := rootSup.RemoveAndWait(riverToken, 20*time.Second); err != nil {
 				log.Errorf("Error fetchLeader stop service [%s] %v", host, err)
 			}
 		}

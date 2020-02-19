@@ -139,20 +139,20 @@ func (s *SphinxService) IndexIsReady(index string, parts uint16) (bool, error) {
 }
 
 // ReloadRtIndex ...
-func (s *SphinxService) ReloadRtIndex(build indexGroupBuild) error {
-	s.sphm.Lock()
-	defer s.sphm.Unlock()
+// func (s *SphinxService) ReloadRtIndex(build indexGroupBuild) error {
+// 	s.sphm.Lock()
+// 	defer s.sphm.Unlock()
 
-	if s.sph == nil {
-		return errors.Annotatef(errSphinxDisconnected, "error reloading after the build %s", build.id)
-	}
+// 	if s.sph == nil {
+// 		return errors.Annotatef(errSphinxDisconnected, "error reloading after the build %s", build.id)
+// 	}
 
-	if s.riverInstance.balancer != nil {
-		return errors.Trace(s.riverInstance.balancer.RollingReloadIndex(s.sph, build))
-	}
+// 	if s.riverInstance.balancer != nil {
+// 		return errors.Trace(s.riverInstance.balancer.RollingReloadIndex(s.sph, build))
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // CheckIndexForOptimize ...
 func (s *SphinxService) CheckIndexForOptimize(index string, parts uint16) error {

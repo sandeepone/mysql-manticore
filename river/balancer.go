@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/sandeepone/mysql-manticore/sphinx"
+	// "github.com/sandeepone/mysql-manticore/sphinx"
 
 	"gopkg.in/birkirb/loggers.v1/log"
 )
@@ -104,44 +104,44 @@ func (b *BalancerClient) getServerState() ([][]*ServerStateInfo, error) {
 	return state, nil
 }
 
-// RollingReloadIndex reloading procedure that tries to disable server while reloading index there
-// Does it sequentially - just one server at a time.
-func (b *BalancerClient) RollingReloadIndex(sph []*sphinx.SphConn, build indexGroupBuild) error {
-	var pause time.Duration
-	state, err := b.getServerState()
-	if err != nil {
-		return errors.Trace(err)
-	}
+// // RollingReloadIndex reloading procedure that tries to disable server while reloading index there
+// // Does it sequentially - just one server at a time.
+// func (b *BalancerClient) RollingReloadIndex(sph []*sphinx.SphConn, build indexGroupBuild) error {
+// 	var pause time.Duration
+// 	state, err := b.getServerState()
+// 	if err != nil {
+// 		return errors.Trace(err)
+// 	}
 
-	for _, conn := range sph {
-		argSet, err := b.gatherServerSetStateArgs(state, conn.Hostname())
-		if err != nil {
-			return errors.Trace(err)
-		}
+// 	for _, conn := range sph {
+// 		argSet, err := b.gatherServerSetStateArgs(state, conn.Hostname())
+// 		if err != nil {
+// 			return errors.Trace(err)
+// 		}
 
-		b.setServerStateMultiple(argSet, disabledState)
-		pause = b.Config.PauseAfterDisabling.Duration
-		if pause > 0 && len(argSet) > 0 {
-			log.Infof("[balancer] waiting for %s after disabling %s", pause, conn.Hostname())
-			time.Sleep(pause)
-		}
+// 		b.setServerStateMultiple(argSet, disabledState)
+// 		pause = b.Config.PauseAfterDisabling.Duration
+// 		if pause > 0 && len(argSet) > 0 {
+// 			log.Infof("[balancer] waiting for %s after disabling %s", pause, conn.Hostname())
+// 			time.Sleep(pause)
+// 		}
 
-		for _, indexBuild := range build.indexes {
-			err = conn.ReloadRtIndex(indexBuild.index, indexBuild.parts)
-			if err != nil {
-				return errors.Trace(err)
-			}
-		}
+// 		for _, indexBuild := range build.indexes {
+// 			err = conn.ReloadRtIndex(indexBuild.index, indexBuild.parts)
+// 			if err != nil {
+// 				return errors.Trace(err)
+// 			}
+// 		}
 
-		pause = b.Config.PauseBeforeEnabling.Duration
-		if pause > 0 && len(argSet) > 0 {
-			log.Infof("[balancer] waiting for %s before enabling %s", pause, conn.Hostname())
-			time.Sleep(pause)
-		}
-		b.setServerStateMultiple(argSet, enabledState)
-	}
-	return nil
-}
+// 		pause = b.Config.PauseBeforeEnabling.Duration
+// 		if pause > 0 && len(argSet) > 0 {
+// 			log.Infof("[balancer] waiting for %s before enabling %s", pause, conn.Hostname())
+// 			time.Sleep(pause)
+// 		}
+// 		b.setServerStateMultiple(argSet, enabledState)
+// 	}
+// 	return nil
+// }
 
 func (b *BalancerClient) gatherServerSetStateArgs(state [][]*ServerStateInfo, sphinxHostname string) ([]setServerStateArgs, error) {
 	a := []setServerStateArgs{}

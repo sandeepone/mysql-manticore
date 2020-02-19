@@ -11,7 +11,7 @@ import (
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/sphinx"
-	"github.com/satori/go.uuid"
+	// "github.com/satori/go.uuid"
 	"github.com/siddontang/go-mysql/canal"
 	"github.com/thejerf/suture"
 
@@ -382,29 +382,29 @@ func (r *River) disableBuildMode() error {
 	return errors.Trace(r.syncService.SwitchBuildMode(false, switchBuildModeTimeout))
 }
 
-func (r *River) startRebuildingIndexGroup(ctx context.Context, build indexGroupBuild) error {
-	var cancelFunc context.CancelFunc
-	if ctx == nil {
-		ctx, cancelFunc = context.WithCancel(r.ctx)
-	}
+// func (r *River) startRebuildingIndexGroup(ctx context.Context, build indexGroupBuild) error {
+// 	var cancelFunc context.CancelFunc
+// 	if ctx == nil {
+// 		ctx, cancelFunc = context.WithCancel(r.ctx)
+// 	}
 
-	build.logger.Info("rebuild start")
-	// r.StatService.logRebuildStart(build)
+// 	build.logger.Info("rebuild start")
+// 	// r.StatService.logRebuildStart(build)
 
-	err := rebuildIndexGroup(ctx, r, build)
-	if err != nil {
-		build.logger.Errorf("rebuild failed: %s", errors.ErrorStack(err))
-	} else {
-		build.logger.Info("rebuild done")
-	}
+// 	err := rebuildIndexGroup(ctx, r, build)
+// 	if err != nil {
+// 		build.logger.Errorf("rebuild failed: %s", errors.ErrorStack(err))
+// 	} else {
+// 		build.logger.Info("rebuild done")
+// 	}
 
-	// r.StatService.logRebuildFinish(build.id, err)
-	if cancelFunc != nil {
-		cancelFunc()
-	}
+// 	// r.StatService.logRebuildFinish(build.id, err)
+// 	if cancelFunc != nil {
+// 		cancelFunc()
+// 	}
 
-	return err
-}
+// 	return err
+// }
 
 func (r *River) checkAllIndexesForOptimize() {
 	for index, indexConfig := range r.c.DataSource {
@@ -422,72 +422,75 @@ func (r *River) rebuildAll(ctx context.Context, reason string) error {
 		return nil
 	}
 
-	return r.rebuildIfNot(
-		ctx,
-		reason,
-		func(string, *SourceConfig) (bool, error) {
-			return false, nil
-		},
-	)
+	// return r.rebuildIfNot(
+	// 	ctx,
+	// 	reason,
+	// 	func(string, *SourceConfig) (bool, error) {
+	// 		return false, nil
+	// 	},
+	// )
+
+	return nil
 }
 
 func (r *River) rebuildIfNotReady(ctx context.Context) error {
 
-	isReady := func(index string, cfg *SourceConfig) (bool, error) {
-		return r.sphinxService.IndexIsReady(index, cfg.Parts)
-	}
-	return r.rebuildIfNot(ctx, "index is not ready", isReady)
-}
-
-func (r *River) rebuildIfNot(
-	ctx context.Context,
-	reason string,
-	predicate func(string, *SourceConfig) (bool, error),
-) (err error) {
-
-	indexes := []string{}
-	for index, cfg := range r.c.DataSource {
-		skipRebuild, err := predicate(index, cfg)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		if !skipRebuild {
-			indexes = append(indexes, index)
-		}
-	}
-
-	if len(indexes) == 0 {
-		return nil
-	}
-
-	if r.c.SkipRebuild {
-		r.l.Info("use skip_rebuild option, skipped rebuildIfNotReady")
-		return nil
-	}
-
-	var rebuildState *RebuildStartState
-	if len(indexes) == len(r.c.DataSource) {
-		rebuildState, err = NewRebuildStartState(r.canal)
-		if err != nil {
-			return errors.Trace(err)
-		}
-		r.l.Infof("rebuild indexes from GTID: %s", rebuildState.gtid)
-	}
-
-	r.l.Infof("will rebuild indexes %s: %s", strings.Join(indexes, ","), reason)
-
-	build, err := newIndexGroupBuild(r.c, r.Log, indexes, uuid.NewV1, rebuildState)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	err = r.startRebuildingIndexGroup(ctx, *build)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
+	// isReady := func(index string, cfg *SourceConfig) (bool, error) {
+	// 	return r.sphinxService.IndexIsReady(index, cfg.Parts)
+	// }
+	// return r.rebuildIfNot(ctx, "index is not ready", isReady)
 	return nil
 }
+
+// func (r *River) rebuildIfNot(
+// 	ctx context.Context,
+// 	reason string,
+// 	predicate func(string, *SourceConfig) (bool, error),
+// ) (err error) {
+
+// 	indexes := []string{}
+// 	for index, cfg := range r.c.DataSource {
+// 		skipRebuild, err := predicate(index, cfg)
+// 		if err != nil {
+// 			return errors.Trace(err)
+// 		}
+
+// 		if !skipRebuild {
+// 			indexes = append(indexes, index)
+// 		}
+// 	}
+
+// 	if len(indexes) == 0 {
+// 		return nil
+// 	}
+
+// 	if r.c.SkipRebuild {
+// 		r.l.Info("use skip_rebuild option, skipped rebuildIfNotReady")
+// 		return nil
+// 	}
+
+// 	var rebuildState *RebuildStartState
+// 	if len(indexes) == len(r.c.DataSource) {
+// 		rebuildState, err = NewRebuildStartState(r.canal)
+// 		if err != nil {
+// 			return errors.Trace(err)
+// 		}
+// 		r.l.Infof("rebuild indexes from GTID: %s", rebuildState.gtid)
+// 	}
+
+// 	r.l.Infof("will rebuild indexes %s: %s", strings.Join(indexes, ","), reason)
+
+// 	build, err := newIndexGroupBuild(r.c, r.Log, indexes, uuid.NewV1, rebuildState)
+// 	if err != nil {
+// 		return errors.Trace(err)
+// 	}
+// 	err = r.startRebuildingIndexGroup(ctx, *build)
+// 	if err != nil {
+// 		return errors.Trace(err)
+// 	}
+
+// 	return nil
+// }
 
 func (r *River) prepareRule() error {
 	if r.c.IngestRules != nil {
