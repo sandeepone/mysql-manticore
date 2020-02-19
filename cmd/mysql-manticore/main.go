@@ -42,6 +42,10 @@ var (
 
 type strList []string
 
+type LeaderData struct {
+	Name string `json:"name"`
+}
+
 func (s *strList) String() string {
 	return strings.Join(*s, " ")
 }
@@ -175,20 +179,20 @@ func fetchLeader() {
 	mu.Lock()
 	defer mu.Unlock()
 
-	var leader string
+	var leader LeaderData
 	if err := httplib.Get(LEADER_ELECT_ADDR).Setting(httplib.CustomSetting).ToJSON(&leader); err != nil {
 		log.Errorf("Error fetchLeader %v", err)
 		return
 	}
 
-	if len(leader) > 3 {
+	if len(leader.Name) > 3 {
 		// this is leader and river not running - start river service
-		if leader == host && !r.IsRunning() {
+		if leader.Name == host && !r.IsRunning() {
 			riverToken = rootSup.Add(r)
 		}
 
 		// this is not leader and river is running - stop river service
-		if leader != host && r.IsRunning() {
+		if leader.Name != host && r.IsRunning() {
 			if err := rootSup.RemoveAndWait(riverToken, 1*time.Minute); err != nil {
 				log.Errorf("Error fetchLeader stop service [%s] %v", host, err)
 			}
