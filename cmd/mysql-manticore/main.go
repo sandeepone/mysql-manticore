@@ -141,10 +141,12 @@ func run() (err error) {
 	rootSup.ServeBackground()
 
 	if k8Leader {
+		log.Infof("Starting in kubernetes mode")
+
 		// Start the goroutine that will check for master once per 30 seconds.
 		go runMasterLoop()
-
 	} else {
+		log.Infof("Starting without cluster support")
 		riverToken = rootSup.Add(r)
 	}
 
@@ -189,10 +191,13 @@ func fetchLeader() {
 		// this is leader and river not running - start river service
 		if leader.Name == host && !r.IsRunning() {
 			riverToken = rootSup.Add(r)
+			log.Infof("New leader elected %s", leader.Name)
 		}
 
 		// this is not leader and river is running - stop river service
 		if leader.Name != host && r.IsRunning() {
+			log.Infof("Leadership changed old leader %s", leader.Name)
+
 			if err := rootSup.RemoveAndWait(riverToken, 1*time.Minute); err != nil {
 				log.Errorf("Error fetchLeader stop service [%s] %v", host, err)
 			}

@@ -277,10 +277,10 @@ func handleHealthz(r *River) http.HandlerFunc {
 	})
 }
 
-// Kubernetes readiness probe - healthy and river is running
+// Kubernetes readiness probe - ready
 func handleReadyz(r *River) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if atomic.LoadInt32(&healthy) == 1 && r.isRunning {
+		if atomic.LoadInt32(&healthy) == 1 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
