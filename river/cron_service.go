@@ -4,8 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/robfig/cron"
 	"github.com/sandeepone/mysql-manticore/util"
+
+	"github.com/robfig/cron"
 	"gopkg.in/birkirb/loggers.v1"
 )
 
@@ -39,12 +40,12 @@ func (s *CronService) Serve() {
 			s.riverInstance.checkAllIndexesForOptimize()
 		})
 	}
-	if cfg.RebuildSchedule != "" {
-		s.cron.AddFunc(cfg.RebuildSchedule, func() {
-			s.log.Info("starting rebuild job")
-			s.riverInstance.rebuildAll(s.ctx, "scheduled rebuild")
-		})
-	}
+	// if cfg.RebuildSchedule != "" {
+	// 	s.cron.AddFunc(cfg.RebuildSchedule, func() {
+	// 		s.log.Info("starting rebuild job")
+	// 		s.riverInstance.rebuildAll(s.ctx, "scheduled rebuild")
+	// 	})
+	// }
 	s.cron.Run()
 }
 

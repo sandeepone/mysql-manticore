@@ -2,7 +2,6 @@ package river
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -185,15 +184,11 @@ func (r *River) run() error {
 	r.sphinxToken = r.sup.Add(r.sphinxService)
 	r.sphinxService.WaitUntilStarted()
 
-	err = r.initMasterState()
+	err = r.sphinxService.LoadSyncState(r.master.syncState())
 	if err != nil {
-		return errors.Trace(err)
-	}
-
-	if err = r.sphinxService.LoadSyncState(r.master.syncState()); err != nil {
-		err = r.rebuildAll(nil, fmt.Sprintf("one or more sphinx backends are not up to date: %v", err))
+		r.l.Errorf("one or more manticore backends are not up to date: %v", err)
 	} else {
-		err = r.rebuildIfNotReady(nil)
+		err = r.checkAllIndexesReady()
 	}
 
 	if err != nil {
@@ -211,17 +206,6 @@ func (r *River) run() error {
 
 	return nil
 }
-
-// // RebuildInProgress list of indexes that are being rebuilt right now
-// func (r *River) RebuildInProgress() []string {
-// 	p := r.rebuildInProgress.ToSlice()
-
-// 	indexList := make([]string, len(p))
-// 	for i, index := range p {
-// 		indexList[i] = index.(string)
-// 	}
-// 	return indexList
-// }
 
 // Stop stops the River service
 func (r *River) Stop() {
@@ -262,25 +246,6 @@ func (r *River) String() string {
 
 func (r *River) IsRunning() bool {
 	return r.isRunning
-}
-
-func (r *River) initMasterState() (err error) {
-	m := r.master
-	err = m.load()
-
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	if !m.skipFileSyncState {
-		r.l.Infof("master state: %s", m.String())
-
-		if m.needPositionReset || (m.useGTID && m.gtid == nil) || m.pos == nil {
-			r.l.Infof("resetting master state to the current upstream position")
-			err = m.resetToCurrent(r.canal)
-		}
-	}
-	return
 }
 
 // SaveState saves current state to file and to sphinx backends
@@ -327,53 +292,34 @@ func (r *River) stopSyncRoutine() {
 	}
 }
 
-func (r *River) enableBuildMode() error {
-	r.syncM.Lock()
-	defer r.syncM.Unlock()
-
-	if r.syncToken == nil {
-		r.l.Infof("did not enable build mode since river sync thread is not running")
-		return nil
-	}
-	return errors.Trace(r.syncService.SwitchBuildMode(true, switchBuildModeTimeout))
-}
-
-func (r *River) disableBuildMode() error {
-	r.syncM.Lock()
-	defer r.syncM.Unlock()
-
-	if r.syncToken == nil {
-		r.l.Infof("did not disable build mode since river sync thread is not running")
-		return nil
-	}
-	return errors.Trace(r.syncService.SwitchBuildMode(false, switchBuildModeTimeout))
-}
-
 func (r *River) checkAllIndexesForOptimize() {
-	for index, indexConfig := range r.c.DataSource {
-		err := r.sphinxService.CheckIndexForOptimize(index, indexConfig.Parts)
+	for index, cfg := range r.c.DataSource {
+		err := r.sphinxService.CheckIndexForOptimize(index, cfg.Parts)
 		if err != nil {
 			log.Warnf("periodic optimize error: %s", errors.ErrorStack(err))
 		}
 	}
 }
 
-// rebuildAll rebuilds all configured indexes
-func (r *River) rebuildAll(ctx context.Context, reason string) error {
-	if r.c.SkipRebuild {
-		r.l.Infof("use skip_rebuild option, skipped rebuildAll indexes: [%s]", reason)
+func (r *River) checkAllIndexesReady() error {
+	indexes := []string{}
+	for index, cfg := range r.c.DataSource {
+		ok, err := r.sphinxService.IndexIsReady(index, cfg.Parts)
+		if err != nil {
+			r.l.Errorf("Index got error for [%s] waiting %v", index, err)
+			return errors.Trace(err)
+		}
+
+		if !ok {
+			indexes = append(indexes, index)
+		}
+	}
+
+	if len(indexes) == 0 {
+		r.l.Infof("All indexes are ready to listen for events")
 		return nil
 	}
 
-	return nil
-}
-
-func (r *River) rebuildIfNotReady(ctx context.Context) error {
-
-	// isReady := func(index string, cfg *SourceConfig) (bool, error) {
-	// 	return r.sphinxService.IndexIsReady(index, cfg.Parts)
-	// }
-	// return r.rebuildIfNot(ctx, "index is not ready", isReady)
 	return nil
 }
 

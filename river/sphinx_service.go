@@ -119,9 +119,7 @@ func (s *SphinxService) SaveSyncState() (err error) {
 	s.sphm.Lock()
 	defer s.sphm.Unlock()
 	var master = s.riverInstance.master
-	if err = master.save(); err != nil {
-		return errors.Trace(err)
-	}
+
 	if s.sph == nil {
 		return errors.Trace(errSphinxDisconnected)
 	}
