@@ -162,10 +162,12 @@ func (s *SphinxService) CheckIndexForOptimize(index string, parts uint16) error 
 	if s.sph == nil {
 		return errors.Annotatef(errSphinxDisconnected, errFormat, index)
 	}
-	// TODO after the latest overhaul this check shouldn't be neccessary anymore
-	if s.riverInstance.rebuildInProgress.Contains(index) {
-		return errors.Annotatef(errIndexRebuildInProgress, errFormat, index)
-	}
+
+	// // TODO after the latest overhaul this check shouldn't be neccessary anymore
+	// if s.riverInstance.rebuildInProgress.Contains(index) {
+	// 	return errors.Annotatef(errIndexRebuildInProgress, errFormat, index)
+	// }
+
 	config := s.riverInstance.c
 	return errors.Annotatef(
 		sphinx.CheckIndexForOptimize(

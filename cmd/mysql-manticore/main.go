@@ -69,7 +69,6 @@ func run() (err error) {
 	var sphAddr strList
 	var logLevel string
 	var logFile string
-	var rebuildAndExit bool
 	var showVersion bool
 	var k8Leader bool
 
@@ -78,7 +77,6 @@ func run() (err error) {
 	flags.Var(&sphAddr, "sph-addr", "Manticore address")
 	flags.StringVar(&logLevel, "log-level", "info", "log level")
 	flags.StringVar(&logFile, "log-file", "", "log file; will log to stdout if empty")
-	flags.BoolVar(&rebuildAndExit, "rebuild-and-exit", false, "rebuild all configured indexes and exit")
 	flags.BoolVar(&showVersion, "version", false, "show program version and exit")
 	flags.BoolVar(&k8Leader, "k8-leader", false, "Use kubernetes leader elector sidecar?")
 
@@ -117,7 +115,7 @@ func run() (err error) {
 		cfg.SphAddr = sphAddr
 	}
 
-	r, err = river.NewRiver(cfg, log.Logger, rebuildAndExit)
+	r, err = river.NewRiver(cfg, log.Logger)
 	if err != nil {
 		return err
 	}
@@ -148,11 +146,11 @@ func run() (err error) {
 	select {
 	case n := <-sc:
 		log.Infof("received signal %v, exiting", n)
-	case err = <-r.FatalErrC:
-		if errors.Cause(err) == river.ErrRebuildAndExitFlagSet {
-			log.Info(err.Error())
-			err = nil
-		}
+		// case err = <-r.FatalErrC:
+		// 	if errors.Cause(err) == river.ErrRebuildAndExitFlagSet {
+		// 		log.Info(err.Error())
+		// 		err = nil
+		// 	}
 	}
 
 	rootSup.Stop()

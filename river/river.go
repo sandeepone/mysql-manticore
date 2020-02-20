@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
 	"github.com/thejerf/suture"
 
@@ -44,8 +43,6 @@ type River struct {
 
 	master *masterState
 
-	rebuildInProgress set.Set
-
 	// protects isRunning flag
 	m sync.Mutex
 
@@ -57,8 +54,6 @@ type River struct {
 
 	FatalErrC chan error
 
-	rebuildAndExit bool
-
 	sup         *suture.Supervisor
 	sphinxToken suture.ServiceToken
 	cronToken   *suture.ServiceToken
@@ -68,12 +63,7 @@ type River struct {
 	syncM sync.Mutex
 }
 
-// ErrRebuildAndExitFlagSet this is used in main() to return appropriate exit code
-var ErrRebuildAndExitFlagSet = errors.New("rebuild-and-exit option is used, exiting")
-
 var errSphinxDisconnected = errors.New("sphinx connections are already closed")
-
-var errIndexRebuildInProgress = errors.New("cannot do index maintenance while it's rebuilding")
 
 var errWaitForGTIDTimedOut = errors.New("waited for GTID sync for too long")
 
@@ -84,7 +74,7 @@ const syncServiceStopTimeout = 30 * time.Second
 const switchBuildModeTimeout = 5 * time.Second
 
 // NewRiver creates the River from config
-func NewRiver(c *Config, log loggers.Contextual, rebuildAndExit bool) (*River, error) {
+func NewRiver(c *Config, log loggers.Contextual) (*River, error) {
 	var err error
 	r := new(River)
 
@@ -100,10 +90,6 @@ func NewRiver(c *Config, log loggers.Contextual, rebuildAndExit bool) (*River, e
 
 	r.FatalErrC = make(chan error, 64)
 
-	r.rebuildAndExit = rebuildAndExit
-
-	r.rebuildInProgress = set.NewSet()
-
 	if err = r.newCanal(); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -112,13 +98,8 @@ func NewRiver(c *Config, log loggers.Contextual, rebuildAndExit bool) (*River, e
 		return nil, errors.Trace(err)
 	}
 
-	// if r.balancer, err = NewBalancerClient(r.c.Balancer); err != nil {
-	// 	return nil, errors.Trace(err)
-	// }
-
 	r.master = newMasterState(r.c)
 
-	// r.StatService = &stat{r: r, RebuildLog: make([]buildLogRecord, 0)}
 	r.StatService = &stat{r: r}
 
 	r.sup = suture.New("river", suture.Spec{
@@ -231,16 +212,16 @@ func (r *River) run() error {
 	return nil
 }
 
-// RebuildInProgress list of indexes that are being rebuilt right now
-func (r *River) RebuildInProgress() []string {
-	p := r.rebuildInProgress.ToSlice()
+// // RebuildInProgress list of indexes that are being rebuilt right now
+// func (r *River) RebuildInProgress() []string {
+// 	p := r.rebuildInProgress.ToSlice()
 
-	indexList := make([]string, len(p))
-	for i, index := range p {
-		indexList[i] = index.(string)
-	}
-	return indexList
-}
+// 	indexList := make([]string, len(p))
+// 	for i, index := range p {
+// 		indexList[i] = index.(string)
+// 	}
+// 	return indexList
+// }
 
 // Stop stops the River service
 func (r *River) Stop() {
