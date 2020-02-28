@@ -88,6 +88,7 @@ type statusInfo struct {
 	// RebuildInProgress    []string
 	// RebuildLog           []buildLogRecord
 	Running bool
+	Syncing bool
 }
 
 var getStatusInfo func() interface{}
@@ -143,7 +144,8 @@ func (s *stat) newStatusInfo() (*statusInfo, error) {
 		DeleteQueryDocs:      s.DeleteQueryDocs.Get(),
 		// RebuildInProgress:    s.r.RebuildInProgress(),
 		// RebuildLog:           s.RebuildLog,
-		Running: s.r.isRunning,
+		Running: s.r.IsRunning(),
+		Syncing: s.r.IsSyncing(),
 	}, nil
 }
 
@@ -235,6 +237,12 @@ func (s *stat) run() (err error) {
 	// mux.Handle("/rebuild", handleRebuildRedir())
 	// mux.Handle("/rebuild/sync", handleRebuild(s.r, true))
 	// mux.Handle("/rebuild/async", handleRebuild(s.r, false))
+
+	// syncing - start/stop
+	mux.Handle("/syncing/start", handleStartSync(s.r, true))
+	mux.Handle("/syncing/stop", handleStopSync(s.r, true))
+	mux.Handle("/syncing/start/async", handleStopSync(s.r, false))
+	mux.Handle("/syncing/stop/async", handleStopSync(s.r, false))
 
 	mux.Handle("/maint", handleMaint(s.r))
 	mux.Handle("/wait", handleWaitForGTID(s.r))
@@ -332,6 +340,70 @@ func handleReadyz(r *River) http.HandlerFunc {
 // 	})
 // }
 
+func handleStartSync(r *River, sync bool) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+		if req.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			w.Write([]byte("unexpected method\n"))
+			return
+		}
+
+		if !r.isRunning {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("river not running\n"))
+			return
+		}
+
+		if r.IsSyncing() {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("sync already running\n"))
+			return
+		}
+
+		if sync {
+			r.startSyncRoutine()
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			go r.startSyncRoutine()
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+}
+
+func handleStopSync(r *River, sync bool) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+		if req.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			w.Write([]byte("unexpected method\n"))
+			return
+		}
+
+		if !r.isRunning {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("river not running\n"))
+			return
+		}
+
+		if !r.IsSyncing() {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("sync not running\n"))
+			return
+		}
+
+		if sync {
+			r.stopSyncRoutine()
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			go r.stopSyncRoutine()
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+}
+
 func handleMaint(r *River) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -339,6 +411,12 @@ func handleMaint(r *River) http.HandlerFunc {
 		if req.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			w.Write([]byte("unexpected method\n"))
+			return
+		}
+
+		if !r.isRunning {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("river not running\n"))
 			return
 		}
 
@@ -374,6 +452,12 @@ func handleWaitForGTID(r *River) http.HandlerFunc {
 		if req.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			w.Write([]byte("unexpected method\n"))
+			return
+		}
+
+		if !r.isRunning {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("river not running\n"))
 			return
 		}
 

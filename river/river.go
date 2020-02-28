@@ -248,6 +248,18 @@ func (r *River) IsRunning() bool {
 	return r.isRunning
 }
 
+func (r *River) IsSyncing() bool {
+	if !r.isRunning {
+		return false
+	}
+
+	if r.syncToken != nil && r.canalToken != nil {
+		return true
+	}
+
+	return false
+}
+
 // SaveState saves current state to file and to sphinx backends
 func (r *River) SaveState() {
 	err := r.sphinxService.SaveSyncState()
