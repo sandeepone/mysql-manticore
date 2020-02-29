@@ -62,8 +62,8 @@ type River struct {
 	syncM sync.Mutex
 }
 
-var errSphinxDisconnected = errors.New("sphinx connections are already closed")
-
+var errSphinxDisconnected = errors.New("manticore connections are already closed")
+var errIndexesNotReady = errors.New("indexes not ready")
 var errWaitForGTIDTimedOut = errors.New("waited for GTID sync for too long")
 
 const canalServiceStopTimeout = 10 * time.Second
@@ -330,6 +330,11 @@ func (r *River) checkAllIndexesReady() error {
 	if len(indexes) == 0 {
 		r.l.Infof("All indexes are ready to listen for events")
 		return nil
+	}
+
+	if len(indexes) == len(r.c.DataSource) {
+		r.l.Errorf("Indexes not ready")
+		return errors.Trace(errIndexesNotReady)
 	}
 
 	return nil

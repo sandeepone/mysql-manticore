@@ -45,11 +45,11 @@ type syncState struct {
 	lastPositionEventID uint64
 	// position events that were not synced yet (except the first one)
 	// the head of this slice moves forward with every batch processed
-	positionEvents   []positionEvent
-	flushC           <-chan time.Time
-	flushTimer       *time.Timer
-	buildModeC       <-chan buildModeMsg
-	buildModeEnabled bool
+	positionEvents []positionEvent
+	flushC         <-chan time.Time
+	flushTimer     *time.Timer
+	// buildModeC       <-chan buildModeMsg
+	// buildModeEnabled bool
 }
 
 type syncActionNeed struct {
@@ -158,7 +158,7 @@ func (h *eventHandler) updateGTID(gtid mysql.GTIDSet) error {
 	return nil
 }
 
-// SyncLoop worker that groups database updates and applies them to Sphinx.
+// SyncLoop worker that groups database updates and applies them to Manticore.
 // Intended to run in a separate goroutine
 func (s *SyncService) SyncLoop(ctx context.Context) {
 	var flushTicker *time.Ticker
@@ -176,7 +176,7 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 				pos:  r.master.position(),
 			},
 		},
-		buildModeC: s.switchC,
+		// buildModeC: s.switchC,
 	}
 
 	defer r.SaveState()
@@ -204,7 +204,7 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 					now.Sub(c.FirstTS) >= r.c.MaxTimeAfterFirstEvent.Duration
 			})
 			if err := r.doBatch(state.staged); err != nil {
-				s.log.Errorf("do sphinx bulk err %v, close sync", err)
+				s.log.Errorf("do manticore bulk err %v, close sync", err)
 				r.FatalErrC <- err
 				break
 			}
@@ -224,20 +224,20 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 			state.firstPositionEventID = syncedPositionEventID
 			state.positionEvents = state.positionEvents[offset:]
 
-			if !state.buildModeEnabled {
-				now := time.Now()
-				if now.Sub(lastSavedTime) > 3*time.Second {
-					lastSavedTime = now
+			// if !state.buildModeEnabled {
+			bnow := time.Now()
+			if bnow.Sub(lastSavedTime) > 3*time.Second {
+				lastSavedTime = bnow
 
-					if r.master.updatePosition(state.positionEvents[0]) {
-						r.SaveState()
-						sc := state.processGTIDSubscribers()
-						if sc > 0 {
-							s.log.Infof("notified %d gtid subscribers", sc)
-						}
+				if r.master.updatePosition(state.positionEvents[0]) {
+					r.SaveState()
+					sc := state.processGTIDSubscribers()
+					if sc > 0 {
+						s.log.Infof("notified %d gtid subscribers", sc)
 					}
 				}
 			}
+			// }
 		}
 	}
 }
@@ -249,10 +249,10 @@ func (s *syncState) acceptMessage(srv *SyncService) syncActionNeed {
 	}
 
 	select {
-	case msg := <-srv.switchC:
-		s.buildModeEnabled = msg.enabled
-		srv.log.Infof("switched build mode to %v at %s", s.buildModeEnabled, s.positionEvents[0])
-		msg.replyTo <- struct{}{}
+	// case msg := <-srv.switchC:
+	// 	s.buildModeEnabled = msg.enabled
+	// 	srv.log.Infof("switched build mode to %v at %s", s.buildModeEnabled, s.positionEvents[0])
+	// 	msg.replyTo <- struct{}{}
 	case v := <-srv.riverInstance.syncC:
 		switch v := v.(type) {
 		case positionEvent:
