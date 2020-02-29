@@ -4,18 +4,18 @@ Connects to MySQL/MariaDB via the replication protocol, and sends updates to [Ma
 
 ## Usage
 
-1. Install [Go](https://golang.org/doc/install)
+1. Installation
+    
+    Docker images are available on
+    -  [Docker Hub](https://hub.docker.com/r/gleez/mysql-manticore)
+    -  [Github](https://github.com/sandeepone/mysql-manticore/packages)
 
-2. Build
-
-        $ make
-
-3. Configure MySQL/MariaDB
+2. Configure MySQL/MariaDB
 
     - `binlog_format` must be `ROW`
     - `binlog_row_image` must be `FULL` (otherwise you may not be able to determine which documents should be updated)
 
-4. Configure Manticore
+3. Configure Manticore
 
     - index `sync_state` should exist and have the following structure
 
@@ -27,13 +27,11 @@ Connects to MySQL/MariaDB via the replication protocol, and sends updates to [Ma
 
     - for every RT-index there should be a plain index with `_plain` suffix
     - if an index is partitioned, then its parts should have the same schema and names that end with `_part_0`, `_part_1`, etc.
-    - `searchd` should expect all index files to be in the same folder (i.e. `path` of each index should have the same dirname)
 
-5. Configure mysql-manticore
+4. Configure mysql-manticore
 
-See example config file [river.toml](./etc/river.toml).
+    See example config file [river.toml](./etc/river.toml).
 
-6. Run
+5. To launch a Mysql Manticore container run
 
-        $ ./bin/mysql-manticore [-config config-file]
-
+    ```docker run --name mysql-manticore -p 8080:8080 -d gleez/mysql-manticore```
