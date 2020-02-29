@@ -49,17 +49,7 @@ type stat struct {
 	DeleteAffectedRows  sync2.AtomicUint64
 	DeleteQueries       sync2.AtomicUint64
 	DeleteQueryDocs     sync2.AtomicUint64
-
-	// RebuildLog []buildLogRecord
 }
-
-// type buildLogRecord struct {
-// 	ID         string
-// 	IndexList  []string
-// 	StartedAt  time.Time
-// 	FinishedAt *time.Time
-// 	Success    bool
-// }
 
 type statusInfo struct {
 	Uptime               string
@@ -85,10 +75,8 @@ type statusInfo struct {
 	DeleteAffectedRows   uint64
 	DeleteQueries        uint64
 	DeleteQueryDocs      uint64
-	// RebuildInProgress    []string
-	// RebuildLog           []buildLogRecord
-	Running bool
-	Syncing bool
+	Running              bool
+	Syncing              bool
 }
 
 var getStatusInfo func() interface{}
@@ -156,31 +144,6 @@ func (s *stat) getStatusInfo() interface{} {
 	}
 	return status
 }
-
-// func (s *stat) logRebuildStart(b indexGroupBuild) {
-// 	s.m.Lock()
-// 	defer s.m.Unlock()
-// 	r := buildLogRecord{
-// 		ID:        b.id,
-// 		IndexList: b.indexSlice(),
-// 		StartedAt: time.Now(),
-// 	}
-// 	s.RebuildLog = append(s.RebuildLog, r)
-// }
-
-// func (s *stat) logRebuildFinish(buildID string, err error) {
-// 	s.m.Lock()
-// 	defer s.m.Unlock()
-// 	for i, r := range s.RebuildLog {
-// 		if r.ID == buildID {
-// 			now := time.Now()
-// 			r.FinishedAt = &now
-// 			r.Success = err == nil
-// 			s.RebuildLog[i] = r
-// 			break
-// 		}
-// 	}
-// }
 
 func (s *stat) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
@@ -305,49 +268,6 @@ func handleReadyz(s *stat) http.HandlerFunc {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	})
 }
-
-// func handleRebuildRedir() http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-// 		w.Header().Add("Link", "</rebuild/sync>; rel=\"alternate\"")
-// 		w.Header().Add("Link", "</rebuild/async>; rel=\"alternate\"")
-// 		w.WriteHeader(http.StatusMultipleChoices)
-// 		w.Write([]byte(`
-// <html>
-// 	<body>
-// 		<p>You can rebuild all configured indexes by making a POST request to one of these endpoints:</p>
-// 		<ul>
-// 			<li><a href="/rebuild/sync">/rebuild/sync</a> - synchronously</li>
-// 			<li><a href="/rebuild/async">/rebuild/async</a> - asynchronously</li>
-// 		</ul>
-// 	</body>
-// </html>
-// 		`))
-// 	})
-// }
-
-// func handleRebuild(r *River, sync bool) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-// 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-// 		if req.Method != http.MethodPost {
-// 			w.WriteHeader(http.StatusMethodNotAllowed)
-// 			w.Write([]byte("unexpected method\n"))
-// 			return
-// 		}
-// 		reason := "requested via http endpoint"
-// 		if sync {
-// 			err := r.rebuildAll(req.Context(), reason)
-// 			if err != nil {
-// 				w.WriteHeader(http.StatusInternalServerError)
-// 				w.Write([]byte(errors.ErrorStack(err)))
-// 			} else {
-// 				w.WriteHeader(http.StatusNoContent)
-// 			}
-// 		} else {
-// 			go r.rebuildAll(nil, reason)
-// 			w.WriteHeader(http.StatusAccepted)
-// 		}
-// 	})
-// }
 
 func handleStartSync(r *River, sync bool) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
