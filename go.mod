@@ -9,6 +9,7 @@ require (
 	github.com/deckarep/golang-set v0.0.0-20171013212420-1d4478f51bed
 	github.com/gleez/pkg v0.0.0-20200218023659-166e6bcfab6c // indirect
 	github.com/gocarina/gocsv v0.0.0-20191122093448-c6a9c812ac26
+	github.com/jpillora/backoff v1.0.0
 	github.com/juju/errors v0.0.0-20170703010042-c7d06af17c68
 	github.com/kr/pretty v0.1.0
 	github.com/kr/text v0.1.0

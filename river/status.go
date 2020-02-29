@@ -223,29 +223,29 @@ func (s *stat) run() (err error) {
 	s.startedAt = time.Now()
 
 	mux := http.NewServeMux()
-	mux.Handle("/stat", s)
-	mux.Handle("/healthz", handleHealthz(s.r))
-	mux.Handle("/readyz", handleReadyz(s.r))
 
+	// kubernetes probes
+	mux.Handle("/healthz", handleHealthz(s.r))
+	mux.Handle("/readyz", handleReadyz(s))
+
+	// endpoints
+	mux.Handle("/stats", s)
+	mux.Handle("/maint", handleMaint(s.r))
+	mux.Handle("/wait", handleWaitForGTID(s.r))
+
+	// syncing - start/stop
+	mux.Handle("/syncing/start", handleStartSync(s.r, true))
+	mux.Handle("/syncing/stop", handleStopSync(s.r, true))
+	mux.Handle("/syncing/start/async", handleStartSync(s.r, false))
+	mux.Handle("/syncing/stop/async", handleStopSync(s.r, false))
+
+	// profiling
 	mux.Handle("/debug/vars", expvar.Handler())
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
-	// mux.Handle("/rebuild", handleRebuildRedir())
-	// mux.Handle("/rebuild/sync", handleRebuild(s.r, true))
-	// mux.Handle("/rebuild/async", handleRebuild(s.r, false))
-
-	// syncing - start/stop
-	mux.Handle("/syncing/start", handleStartSync(s.r, true))
-	mux.Handle("/syncing/stop", handleStopSync(s.r, true))
-	mux.Handle("/syncing/start/async", handleStopSync(s.r, false))
-	mux.Handle("/syncing/stop/async", handleStopSync(s.r, false))
-
-	mux.Handle("/maint", handleMaint(s.r))
-	mux.Handle("/wait", handleWaitForGTID(s.r))
 
 	stdLogger, logWriter := util.NewStdLogger(s.r.Log)
 	defer logWriter.Close()
@@ -286,9 +286,18 @@ func handleHealthz(r *River) http.HandlerFunc {
 }
 
 // Kubernetes readiness probe - ready
-func handleReadyz(r *River) http.HandlerFunc {
+func handleReadyz(s *stat) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if atomic.LoadInt32(&healthy) == 1 {
+		d := time.Now().Sub(s.startedAt)
+
+		// allows to take leadership or rolling update.
+		// wait for 2 mins and inform kubernetes if unsuccessful
+		if !s.r.isRunning && d.Seconds() < 65 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		if s.r.isRunning && atomic.LoadInt32(&healthy) == 1 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

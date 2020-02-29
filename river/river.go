@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jpillora/backoff"
 	"github.com/juju/errors"
 	"github.com/thejerf/suture"
 
@@ -184,11 +185,39 @@ func (r *River) run() error {
 	r.sphinxToken = r.sup.Add(r.sphinxService)
 	r.sphinxService.WaitUntilStarted()
 
-	err = r.sphinxService.LoadSyncState(r.master.syncState())
+	b := &backoff.Backoff{
+		Min:    1 * time.Second,
+		Max:    20 * time.Minute,
+		Factor: 2,
+		Jitter: true,
+	}
+	defer b.Reset()
+
+	// get master state - wait until get state or timeout
+	for {
+		time.Sleep(b.Duration())
+
+		err = r.sphinxService.LoadSyncState(r.master.syncState())
+		if err == nil {
+			b.Reset()
+			break
+		}
+	}
+
 	if err != nil {
 		r.l.Errorf("one or more manticore backends are not up to date: %v", err)
-	} else {
+		return errors.Trace(err)
+	}
+
+	// check indexes are ready - wait until ready or timeout
+	for {
+		time.Sleep(b.Duration())
+
 		err = r.checkAllIndexesReady()
+		if err == nil {
+			b.Reset()
+			break
+		}
 	}
 
 	if err != nil {
@@ -333,7 +362,12 @@ func (r *River) checkAllIndexesReady() error {
 	}
 
 	if len(indexes) == len(r.c.DataSource) {
-		r.l.Errorf("Indexes not ready")
+		r.l.Errorf("All indexes not ready")
+		return errors.Trace(errIndexesNotReady)
+	}
+
+	if len(indexes) > 0 {
+		r.l.Errorf("%d index(s) not ready", len(indexes))
 		return errors.Trace(errIndexesNotReady)
 	}
 
