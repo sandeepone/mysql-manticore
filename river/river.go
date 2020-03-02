@@ -55,7 +55,7 @@ type River struct {
 	FatalErrC chan error
 
 	sup         *suture.Supervisor
-	sphinxToken suture.ServiceToken
+	sphinxToken *suture.ServiceToken
 	cronToken   *suture.ServiceToken
 	syncToken   *suture.ServiceToken
 	canalToken  *suture.ServiceToken
@@ -182,7 +182,10 @@ func (r *River) run() error {
 	r.sup.ServeBackground()
 
 	r.sphinxService.RequestStartNotification()
-	r.sphinxToken = r.sup.Add(r.sphinxService)
+
+	t := r.sup.Add(r.sphinxService)
+	r.sphinxToken = &t
+
 	r.sphinxService.WaitUntilStarted()
 
 	b := &backoff.Backoff{
@@ -263,9 +266,12 @@ func (r *River) Stop() {
 
 	r.Cancel()
 
-	err := r.sup.RemoveAndWait(r.sphinxToken, sphinxServiceStopTimeout)
-	if err != nil {
-		r.l.Errorf("SphinxService failed to stop after waiting for %s", sphinxServiceStopTimeout)
+	if r.sphinxToken != nil {
+		err := r.sup.RemoveAndWait(*r.sphinxToken, sphinxServiceStopTimeout)
+		if err != nil {
+			r.l.Errorf("SphinxService failed to stop after waiting for %s", sphinxServiceStopTimeout)
+		}
+		r.sphinxToken = nil
 	}
 
 	r.sup.Stop()

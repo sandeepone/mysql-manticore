@@ -197,10 +197,8 @@ func (s *stat) run() (err error) {
 	mux.Handle("/wait", handleWaitForGTID(s.r))
 
 	// syncing - start/stop
-	mux.Handle("/syncing/start", handleStartSync(s.r, true))
-	mux.Handle("/syncing/stop", handleStopSync(s.r, true))
-	mux.Handle("/syncing/start/async", handleStartSync(s.r, false))
-	mux.Handle("/syncing/stop/async", handleStopSync(s.r, false))
+	mux.Handle("/syncing/start", handleStartSync(s.r))
+	mux.Handle("/syncing/stop", handleStopSync(s.r))
 
 	// profiling
 	mux.Handle("/debug/vars", expvar.Handler())
@@ -269,8 +267,11 @@ func handleReadyz(s *stat) http.HandlerFunc {
 	})
 }
 
-func handleStartSync(r *River, sync bool) http.HandlerFunc {
+func handleStartSync(r *River) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		r.m.Lock()
+		defer r.m.Unlock()
+
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 		if req.Method != http.MethodPost {
@@ -291,18 +292,33 @@ func handleStartSync(r *River, sync bool) http.HandlerFunc {
 			return
 		}
 
-		if sync {
-			r.startSyncRoutine()
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			go r.startSyncRoutine()
-			w.WriteHeader(http.StatusAccepted)
+		// reconnect manticore client - always make new connection
+		if r.sphinxToken == nil {
+			r.sphinxService.RequestStartNotification()
+
+			t := r.sup.Add(r.sphinxService)
+			r.sphinxToken = &t
+
+			r.sphinxService.WaitUntilStarted()
 		}
+
+		err := r.sphinxService.LoadSyncState(r.master.syncState())
+		if err != nil {
+			r.l.Errorf("Status: one or more manticore backends are not up to date: %v", err)
+			w.Write([]byte("manticore backend not up to date\n"))
+			return
+		}
+
+		r.startSyncRoutine()
+		w.WriteHeader(http.StatusNoContent)
 	})
 }
 
-func handleStopSync(r *River, sync bool) http.HandlerFunc {
+func handleStopSync(r *River) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		r.m.Lock()
+		defer r.m.Unlock()
+
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 		if req.Method != http.MethodPost {
@@ -323,13 +339,19 @@ func handleStopSync(r *River, sync bool) http.HandlerFunc {
 			return
 		}
 
-		if sync {
-			r.stopSyncRoutine()
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			go r.stopSyncRoutine()
-			w.WriteHeader(http.StatusAccepted)
+		r.stopSyncRoutine()
+
+		// disconnect manticore client - probably host ip changes
+		if r.sphinxToken != nil {
+			err := r.sup.RemoveAndWait(*r.sphinxToken, sphinxServiceStopTimeout)
+			if err != nil {
+				r.l.Errorf("Status: SphinxService failed to stop after waiting for %s", sphinxServiceStopTimeout)
+			}
+
+			r.sphinxToken = nil
 		}
+
+		w.WriteHeader(http.StatusNoContent)
 	})
 }
 

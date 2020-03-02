@@ -92,13 +92,14 @@ func (s *SphinxService) LoadSyncState(defaultState sphinx.SyncState) error {
 		return errors.Annotatef(errSphinxDisconnected, "error loading synchronization state")
 	}
 	if s.riverInstance.c.SkipSphSyncState {
-		log.Info("SphinxService: use skip_sph_sync_state option, skipped loading synchronization state from sphinx")
+		log.Info("SphinxService: use skip_sph_sync_state option, skipped loading synchronization state from manticore")
 		return nil
 	}
 	if len(s.sph) == 0 {
-		log.Info("SphinxService: no sphinx backends configured, skipped loading synchronization state from sphinx")
+		log.Info("SphinxService: no sphinx backends configured, skipped loading synchronization state from manticore")
 		return nil
 	}
+
 	state, err := sphinx.LoadSyncState(s.sph, defaultState)
 	if err != nil {
 		return errors.Trace(err)
