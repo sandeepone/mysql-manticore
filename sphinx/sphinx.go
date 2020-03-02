@@ -10,10 +10,13 @@ import (
 	"time"
 
 	set "github.com/deckarep/golang-set"
+	"github.com/jpillora/backoff"
 	"github.com/juju/errors"
+
 	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/client"
 	"github.com/siddontang/go-mysql/mysql"
+
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
@@ -30,11 +33,14 @@ type ConnSettings struct {
 
 // SphConn struct that holds channels for communicationg with connection goroutines
 type SphConn struct {
-	conn     *Conn
-	hostname string
-	in       chan interface{}
-	out      chan SphResult
-	settings ConnSettings
+	conn       *Conn
+	addr       string
+	hostname   string
+	in         chan interface{}
+	out        chan SphResult
+	settings   ConnSettings
+	maxRetries int
+	attempts   int
 }
 
 // SphResult no tuples in golang :(
@@ -106,7 +112,7 @@ func Connect(addr string) (*Conn, error) {
 	return &Conn{conn}, nil
 }
 
-// ConnectMany connects to a list of sphinx addresses and starts respective goroutines
+// ConnectMany connects to a list of manticore addresses and starts respective goroutines
 func ConnectMany(addrList []string, settings ConnSettings, wg *sync.WaitGroup) ([]*SphConn, error) {
 	connList := make([]*SphConn, len(addrList))
 	for i, addr := range addrList {
@@ -119,11 +125,13 @@ func ConnectMany(addrList []string, settings ConnSettings, wg *sync.WaitGroup) (
 			return nil, errors.Trace(err)
 		}
 		connList[i] = &SphConn{
-			conn:     conn,
-			hostname: host,
-			in:       make(chan interface{}),
-			out:      make(chan SphResult),
-			settings: settings,
+			conn:       conn,
+			addr:       addr,
+			hostname:   host,
+			in:         make(chan interface{}),
+			out:        make(chan SphResult),
+			settings:   settings,
+			maxRetries: 10,
 		}
 		if wg != nil {
 			wg.Add(1)
@@ -133,7 +141,7 @@ func ConnectMany(addrList []string, settings ConnSettings, wg *sync.WaitGroup) (
 	return connList, nil
 }
 
-// CloseMany closes a bunch of sphinx connections
+// CloseMany closes a bunch of manticore connections
 func CloseMany(sph []*SphConn) {
 	for _, conn := range sph {
 		conn.Close()
@@ -173,14 +181,24 @@ func (c *SphConn) startExecLoop(wg *sync.WaitGroup) {
 }
 
 func (c *SphConn) canRetry(err error) (bool, time.Duration) {
+	if c.attempts > c.maxRetries {
+		return false, 0
+	}
+
 	if mysql.ErrorEqual(err, mysql.ErrBadConn) {
 		return true, c.settings.DisconnectRetryDelay
 	}
-	// Unfortunately, sphinx is unable to properly report a "too many connections" error.
+
+	if strings.Contains(errors.Cause(err).Error(), "connection refused") {
+		return true, c.settings.DisconnectRetryDelay
+	}
+
+	// Unfortunately, manticore is unable to properly report a "too many connections" error.
 	// Its attempt to do that leads to a protocol-level error.
 	if strings.HasPrefix(errors.Cause(err).Error(), "invalid sequence ") {
 		return true, c.settings.OverloadRetryDelay
 	}
+
 	return false, 0
 }
 
@@ -194,6 +212,7 @@ func (c *SphConn) execute(stmt string) (*mysql.Result, error) {
 			res, err = c.retry(pause, stmt)
 		}
 	} else {
+		c.attempts = 0
 		if strings.HasPrefix(strings.ToUpper(stmt), "SELECT") {
 			log.Infof("[sphinx-query@%s] [done] selected %d row(s)", addr, res.RowNumber())
 		} else {
@@ -204,18 +223,39 @@ func (c *SphConn) execute(stmt string) (*mysql.Result, error) {
 }
 
 func (c *SphConn) retry(pause time.Duration, stmt string) (*mysql.Result, error) {
-	addr := c.RemoteAddr().String()
+	// addr := c.RemoteAddr().String()
 	err := c.conn.Close()
-	if err != nil {
+	if err != nil && c.attempts > c.maxRetries {
 		return nil, errors.Trace(err)
 	}
-	log.Infof("[sphinx-query@%s] waiting for %s before a retry", addr, pause)
-	time.Sleep(pause)
-	err = c.reconnect()
-	if err != nil {
-		return nil, errors.Trace(err)
+
+	b := &backoff.Backoff{
+		Min:    1 * time.Second,
+		Max:    30 * time.Second,
+		Factor: 2,
+		Jitter: true,
 	}
-	log.Infof("[sphinx-query@%s] [retry] %s", addr, stmt)
+	defer b.Reset()
+
+	for {
+		log.Infof("[sphinx-query@%s] waiting for %s before a retry", c.addr, b.Duration())
+		time.Sleep(b.Duration())
+		c.attempts = c.attempts + 1
+
+		err = c.reconnect()
+		if err == nil {
+			b.Reset()
+			c.attempts = 0
+			break
+		}
+
+		if err != nil && c.attempts > c.maxRetries {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	b.Reset()
+	log.Infof("[sphinx-query@%s] [retry] %s", c.RemoteAddr().String(), stmt)
 	return c.conn.Conn.Execute(stmt)
 }
 
@@ -233,6 +273,11 @@ func (c *SphConn) LocalAddr() net.Addr {
 // RemoteAddr returns the remote network address
 func (c *SphConn) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
+}
+
+// Addr returns manticore address
+func (c *SphConn) Addr() string {
+	return c.addr
 }
 
 // ReloadRtIndex truncates rt-index, then attaches a plain index
@@ -259,12 +304,19 @@ func (c *SphConn) Close() {
 
 // Reconnect tries to reconnect
 func (c *SphConn) reconnect() error {
-	addr := c.RemoteAddr().String()
-	log.Infof("[sphinx-reconnect] %s", addr)
-	conn, err := client.Connect(addr, "", "", "")
+	host, _, err := net.SplitHostPort(c.addr)
 	if err != nil {
 		return errors.Trace(err)
 	}
+
+	// addr := c.RemoteAddr().String()
+	log.Infof("[sphinx-reconnect] %s", c.addr)
+	conn, err := client.Connect(c.addr, "", "", "")
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	c.hostname = host
 	c.conn.Conn = conn
 	return nil
 }

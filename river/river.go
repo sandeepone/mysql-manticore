@@ -198,14 +198,19 @@ func (r *River) run() error {
 		time.Sleep(b.Duration())
 
 		err = r.sphinxService.LoadSyncState(r.master.syncState())
+		if err != nil {
+			r.l.Errorf("one or more manticore backends are not up to date: %v", err)
+		}
+
 		if err == nil {
 			b.Reset()
+			r.l.Infof("Connected to manticore backend")
 			break
 		}
 	}
 
 	if err != nil {
-		r.l.Errorf("one or more manticore backends are not up to date: %v", err)
+		// r.l.Errorf("one or more manticore backends are not up to date: %v", err)
 		return errors.Trace(err)
 	}
 

@@ -72,7 +72,7 @@ func (s *SphinxService) connect() {
 	}
 	s.sph, err = sphinx.ConnectMany(r.c.SphAddr, connSettings, nil)
 	if err != nil {
-		r.FatalErrC <- errors.Annotatef(err, "could not connect to sphinx")
+		r.FatalErrC <- errors.Annotatef(err, "could not connect to manticore")
 		return
 	}
 }
@@ -87,6 +87,7 @@ func (s *SphinxService) disconnect() {
 func (s *SphinxService) LoadSyncState(defaultState sphinx.SyncState) error {
 	s.sphm.Lock()
 	defer s.sphm.Unlock()
+
 	if s.sph == nil {
 		return errors.Annotatef(errSphinxDisconnected, "error loading synchronization state")
 	}
@@ -188,6 +189,7 @@ func (s *SphinxService) Query(stmt string, counter *sync2.AtomicUint64) error {
 	if s.sph == nil {
 		return errors.Trace(errSphinxDisconnected)
 	}
+
 	resultList := sphinx.ExecuteInParallel(s.sph, stmt)
 	for i, res := range resultList {
 		if res.Err != nil {
