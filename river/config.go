@@ -12,7 +12,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
-	// "github.com/sandeepone/mysql-manticore/util"
 
 	// "vitess.io/vitess/go/sqltypes"
 	// querypb "vitess.io/vitess/go/vt/proto/query"
@@ -21,28 +20,6 @@ import (
 	"github.com/sandeepone/sqlparser/dependency/querypb"
 	"github.com/sandeepone/sqlparser/dependency/sqltypes"
 )
-
-// // IndexerConfig is the configs for source
-// type IndexerConfig struct {
-// 	MemLimit           string            `toml:"mem_limit"`
-// 	MaxIops            string            `toml:"max_iops"`
-// 	MaxIosize          string            `toml:"max_iosize"`
-// 	MaxXmlpipe2Field   string            `toml:"max_xmlpipe2_field"`
-// 	WriteBuffer        string            `toml:"write_buffer"`
-// 	MaxFileFieldBuffer string            `toml:"max_file_field_buffer"`
-// 	OnFileFieldError   string            `toml:"on_file_field_error"`
-// 	LemmatizerCache    string            `toml:"lemmatizer_cache"`
-// 	GroupConcatMaxLen  uint64            `toml:"group_concat_max_len"`
-// 	Tokenizer          string            `toml:"tokenizer"`
-// 	Dictionaries       IndexDictionaries `toml:"dictionaries"`
-// }
-
-// // IndexUploaderConfig ...
-// type IndexUploaderConfig struct {
-// 	Executable string            `toml:"executable"`
-// 	Arguments  []TomlGoTemplate  `toml:"arguments"`
-// 	HostMap    map[string]string `toml:"host_map"`
-// }
 
 // IndexMaintenanceConfig ...
 type IndexMaintenanceConfig struct {
@@ -78,22 +55,6 @@ type SphConnSettings struct {
 	DisconnectRetryDelay TomlDuration `toml:"disconnect_retry_delay"`
 	OverloadRetryDelay   TomlDuration `toml:"overload_retry_delay"`
 }
-
-// // BalancerConfig details for connecting to the load balancer
-// // Used for disabling a server during RELOAD-TRUNCATE-ATTACH sequence
-// // Only HAProxy is supported
-// type BalancerConfig struct {
-// 	Addr                []string     `toml:"addr"`
-// 	BackendName         []string     `toml:"backend"`
-// 	PauseAfterDisabling TomlDuration `toml:"pause_after_disabling"`
-// 	PauseBeforeEnabling TomlDuration `toml:"pause_before_enabling"`
-// 	Timeout             TomlDuration `toml:"timeout"`
-// 	UseTLS              bool         `toml:"use_tls"`
-// 	ServerCAFile        string       `toml:"server_ca_file"`
-// 	ClientCertFile      string       `toml:"client_cert_file"`
-// 	ClientKeyFile       string       `toml:"client_key_file"`
-// 	TLSServerName       string       `toml:"tls_server_name"`
-// }
 
 const (
 	// DocID document id
@@ -150,7 +111,8 @@ type Config struct {
 	DumpExec       string `toml:"mysqldump"`
 	SkipMasterData bool   `toml:"skip_master_data"`
 
-	SkipSphSyncState bool `toml:"skip_sph_sync_state"`
+	SkipSphSyncState  bool `toml:"skip_sph_sync_state"`
+	SkipSphIndexCheck bool `toml:"skip_sph_index_check"`
 
 	IngestRules []IngestRule `toml:"ingest"`
 

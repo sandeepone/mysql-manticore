@@ -5,7 +5,7 @@ my_user = "manticore"
 my_pass = "manticore"
 my_charset = "utf8mb4"
 
-# list of Sphinx servers
+# list of Manticore servers
 sph_addr = [
     "127.0.0.1:9306",
 ]
@@ -28,8 +28,11 @@ mysqldump = ""
 # do not use --master-data flag when running mysqldump
 skip_master_data = false
 
-# ignore saved state from Sphinx
+# ignore saved state from Manticore
 skip_sph_sync_state = false
+
+# ignore Manticore indexes ready check
+skip_sph_index_check = false
 
 # how often we should try to flush changes to Sphinx (0 means after every finished transaction)
 flush_bulk_time = "1000ms"

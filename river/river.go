@@ -354,6 +354,10 @@ func (r *River) checkAllIndexesForOptimize() {
 }
 
 func (r *River) checkAllIndexesReady() error {
+	if r.c.SkipSphIndexCheck {
+		return nil
+	}
+
 	indexes := []string{}
 	for index, cfg := range r.c.DataSource {
 		ok, err := r.sphinxService.IndexIsReady(index, cfg.Parts)
