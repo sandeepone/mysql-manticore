@@ -6,6 +6,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/sphinx"
 	"github.com/siddontang/go/sync2"
+
 	"gopkg.in/birkirb/loggers.v1"
 	"gopkg.in/birkirb/loggers.v1/log"
 )
@@ -125,7 +126,13 @@ func (s *SphinxService) SaveSyncState() (err error) {
 	if s.sph == nil {
 		return errors.Trace(errSphinxDisconnected)
 	}
-	return errors.Trace(sphinx.SaveSyncState(s.sph, master.syncState()))
+
+	err = sphinx.SaveSyncState(s.sph, master.syncState())
+	if err != nil {
+		s.riverInstance.FatalErrC <- errors.Annotatef(err, "could not connect to manticore")
+	}
+
+	return errors.Trace(err)
 }
 
 // IndexIsReady ...
@@ -137,22 +144,6 @@ func (s *SphinxService) IndexIsReady(index string, parts uint16) (bool, error) {
 	}
 	return sphinx.IndexIsReady(s.sph, index, parts)
 }
-
-// ReloadRtIndex ...
-// func (s *SphinxService) ReloadRtIndex(build indexGroupBuild) error {
-// 	s.sphm.Lock()
-// 	defer s.sphm.Unlock()
-
-// 	if s.sph == nil {
-// 		return errors.Annotatef(errSphinxDisconnected, "error reloading after the build %s", build.id)
-// 	}
-
-// 	if s.riverInstance.balancer != nil {
-// 		return errors.Trace(s.riverInstance.balancer.RollingReloadIndex(s.sph, build))
-// 	}
-
-// 	return nil
-// }
 
 // CheckIndexForOptimize ...
 func (s *SphinxService) CheckIndexForOptimize(index string, parts uint16) error {

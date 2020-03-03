@@ -10,7 +10,6 @@ import (
 	"time"
 
 	set "github.com/deckarep/golang-set"
-	"github.com/jpillora/backoff"
 	"github.com/juju/errors"
 
 	"github.com/sandeepone/mysql-manticore/util"
@@ -131,7 +130,7 @@ func ConnectMany(addrList []string, settings ConnSettings, wg *sync.WaitGroup) (
 			in:         make(chan interface{}),
 			out:        make(chan SphResult),
 			settings:   settings,
-			maxRetries: 10,
+			maxRetries: 5,
 		}
 		if wg != nil {
 			wg.Add(1)
@@ -229,23 +228,14 @@ func (c *SphConn) retry(pause time.Duration, stmt string) (*mysql.Result, error)
 		return nil, errors.Trace(err)
 	}
 
-	b := &backoff.Backoff{
-		Min:    1 * time.Second,
-		Max:    30 * time.Second,
-		Factor: 2,
-		Jitter: true,
-	}
-	defer b.Reset()
-
 	for {
-		log.Infof("[sphinx-query@%s] waiting for %s before a retry", c.addr, b.Duration())
-		time.Sleep(b.Duration())
+		log.Infof("[sphinx-query@%s] waiting for %s before a retry", c.addr, pause)
+		time.Sleep(pause)
 		c.attempts = c.attempts + 1
 
 		err = c.reconnect()
 		if err == nil {
-			b.Reset()
-			c.attempts = 0
+			// c.attempts = 0
 			break
 		}
 
@@ -254,7 +244,7 @@ func (c *SphConn) retry(pause time.Duration, stmt string) (*mysql.Result, error)
 		}
 	}
 
-	b.Reset()
+	c.attempts = 0
 	log.Infof("[sphinx-query@%s] [retry] %s", c.RemoteAddr().String(), stmt)
 	return c.conn.Conn.Execute(stmt)
 }

@@ -48,8 +48,6 @@ type syncState struct {
 	positionEvents []positionEvent
 	flushC         <-chan time.Time
 	flushTimer     *time.Timer
-	// buildModeC       <-chan buildModeMsg
-	// buildModeEnabled bool
 }
 
 type syncActionNeed struct {
@@ -176,7 +174,6 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 				pos:  r.master.position(),
 			},
 		},
-		// buildModeC: s.switchC,
 	}
 
 	defer r.SaveState()
@@ -224,7 +221,6 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 			state.firstPositionEventID = syncedPositionEventID
 			state.positionEvents = state.positionEvents[offset:]
 
-			// if !state.buildModeEnabled {
 			bnow := time.Now()
 			if bnow.Sub(lastSavedTime) > 3*time.Second {
 				lastSavedTime = bnow
@@ -237,7 +233,6 @@ func (s *SyncService) SyncLoop(ctx context.Context) {
 					}
 				}
 			}
-			// }
 		}
 	}
 }

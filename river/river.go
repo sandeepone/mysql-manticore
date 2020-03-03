@@ -181,39 +181,38 @@ func (r *River) run() error {
 
 	r.sup.ServeBackground()
 
-	r.sphinxService.RequestStartNotification()
+	if r.sphinxToken == nil {
+		r.sphinxService.RequestStartNotification()
 
-	t := r.sup.Add(r.sphinxService)
-	r.sphinxToken = &t
+		t := r.sup.Add(r.sphinxService)
+		r.sphinxToken = &t
 
-	r.sphinxService.WaitUntilStarted()
+		r.sphinxService.WaitUntilStarted()
+	}
 
 	b := &backoff.Backoff{
 		Min:    1 * time.Second,
-		Max:    20 * time.Minute,
+		Max:    10 * time.Minute,
 		Factor: 2,
 		Jitter: true,
 	}
 	defer b.Reset()
 
-	// get master state - wait until get state or timeout
-	for {
-		time.Sleep(b.Duration())
+	// // get master state - wait until get state or timeout
+	// for {
+	// 	time.Sleep(b.Duration())
 
-		err = r.sphinxService.LoadSyncState(r.master.syncState())
-		if err != nil {
-			r.l.Errorf("one or more manticore backends are not up to date: %v", err)
-		}
+	// 	err = r.sphinxService.LoadSyncState(r.master.syncState())
+	// 	if err == nil {
+	// 		b.Reset()
+	// 		r.l.Infof("Connected to manticore backend")
+	// 		break
+	// 	}
+	// }
 
-		if err == nil {
-			b.Reset()
-			r.l.Infof("Connected to manticore backend")
-			break
-		}
-	}
-
+	err = r.sphinxService.LoadSyncState(r.master.syncState())
 	if err != nil {
-		// r.l.Errorf("one or more manticore backends are not up to date: %v", err)
+		r.l.Errorf("one or more manticore backends are not up to date: %v", err)
 		return errors.Trace(err)
 	}
 

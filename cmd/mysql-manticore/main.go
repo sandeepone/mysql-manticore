@@ -146,20 +146,21 @@ func run() (err error) {
 	select {
 	case n := <-sc:
 		log.Infof("received signal %v, exiting", n)
-		// case err = <-r.FatalErrC:
-		// 	if errors.Cause(err) == river.ErrRebuildAndExitFlagSet {
-		// 		log.Info(err.Error())
-		// 		err = nil
-		// 	}
+	case err = <-r.FatalErrC:
+		// if errors.Cause(err) == river.ErrRebuildAndExitFlagSet {
+		// 	log.Info(err.Error())
+		// 	err = nil
+		// }
+		log.Infof("received error [%v], exiting", err.Error())
 	}
 
 	rootSup.Stop()
 	return err
 }
 
-// k8s run master loop will check for master once per 30 seconds.
+// k8s run master loop will check for master once per 20 seconds.
 func runMasterLoop() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	for {
 		select {
 		case <-done:

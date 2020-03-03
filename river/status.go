@@ -214,7 +214,7 @@ func (s *stat) run() (err error) {
 
 	getStatusInfo = s.getStatusInfo
 
-	// signal Kubernetes the server is healthy & ready to receive traffic
+	// signal Kubernetes the server is healthy
 	atomic.StoreInt32(&healthy, 1)
 
 	return s.srv.Serve(s.l)
@@ -252,8 +252,8 @@ func handleReadyz(s *stat) http.HandlerFunc {
 		d := time.Now().Sub(s.startedAt)
 
 		// allows to take leadership or rolling update.
-		// wait for 2 mins and inform kubernetes if unsuccessful
-		if !s.r.isRunning && d.Seconds() < 65 {
+		// wait for 1 min and inform kubernetes if unsuccessful
+		if !s.r.isRunning && d.Seconds() < 45 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -304,11 +304,12 @@ func handleStartSync(r *River) http.HandlerFunc {
 
 		err := r.sphinxService.LoadSyncState(r.master.syncState())
 		if err != nil {
-			r.l.Errorf("Status: one or more manticore backends are not up to date: %v", err)
-			w.Write([]byte("manticore backend not up to date\n"))
+			r.l.Errorf("Status: failed to reset GTID after successful restart: %s", errors.ErrorStack(err))
+			w.Write([]byte("failed to reset GTID\n"))
 			return
 		}
 
+		r.l.Infof("reset GTID after successful restart to: %s", r.master.gtidSet())
 		r.startSyncRoutine()
 		w.WriteHeader(http.StatusNoContent)
 	})
