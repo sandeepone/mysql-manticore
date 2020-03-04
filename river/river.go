@@ -190,31 +190,19 @@ func (r *River) run() error {
 		r.sphinxService.WaitUntilStarted()
 	}
 
-	b := &backoff.Backoff{
-		Min:    1 * time.Second,
-		Max:    10 * time.Minute,
-		Factor: 2,
-		Jitter: true,
-	}
-	defer b.Reset()
-
-	// // get master state - wait until get state or timeout
-	// for {
-	// 	time.Sleep(b.Duration())
-
-	// 	err = r.sphinxService.LoadSyncState(r.master.syncState())
-	// 	if err == nil {
-	// 		b.Reset()
-	// 		r.l.Infof("Connected to manticore backend")
-	// 		break
-	// 	}
-	// }
-
 	err = r.sphinxService.LoadSyncState(r.master.syncState())
 	if err != nil {
 		r.l.Errorf("one or more manticore backends are not up to date: %v", err)
 		return errors.Trace(err)
 	}
+
+	b := &backoff.Backoff{
+		Min:    1 * time.Second,
+		Max:    5 * time.Minute,
+		Factor: 2,
+		Jitter: true,
+	}
+	defer b.Reset()
 
 	// check indexes are ready - wait until ready or timeout
 	for {

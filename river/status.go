@@ -311,6 +311,7 @@ func handleStartSync(r *River) http.HandlerFunc {
 
 		r.l.Infof("reset GTID after successful restart to: %s", r.master.gtidSet())
 		r.startSyncRoutine()
+
 		w.WriteHeader(http.StatusNoContent)
 	})
 }
