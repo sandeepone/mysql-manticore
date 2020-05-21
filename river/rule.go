@@ -328,6 +328,7 @@ func (r *IngestRule) filterColumns(columns []string, row []interface{}) ([]strin
 func (r *IngestRule) insertedTableRow(docID uint64, pkCols []int, columns []string, row []interface{}) TableRowChange {
 	pk := newPrimaryKeyFromRow(pkCols, row)
 	columns, row = r.filterColumns(columns, row)
+
 	return TableRowChange{
 		Action:    canal.InsertAction,
 		Columns:   columns,
@@ -364,6 +365,7 @@ func (r *IngestRule) updatedTableRow(docID uint64, pkCols []int, columns []strin
 func (r *IngestRule) deletedTableRow(docID uint64, pkCols []int, columns []string, row []interface{}) TableRowChange {
 	pk := newPrimaryKeyFromRow(pkCols, row)
 	columns, row = r.filterColumns(columns, row)
+
 	return TableRowChange{
 		Action:    canal.DeleteAction,
 		Columns:   columns,

@@ -7,7 +7,7 @@ require (
 	github.com/birkirb/loggers-mapper-logrus v0.0.0-20180326232643-461f2d8e6f72
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v0.0.0-20171013212420-1d4478f51bed
-	github.com/gleez/pkg v0.0.0-20200218023659-166e6bcfab6c // indirect
+	github.com/gleez/pkg v0.0.0-20200309031106-3c6bec2c18be
 	github.com/gocarina/gocsv v0.0.0-20191122093448-c6a9c812ac26
 	github.com/jpillora/backoff v1.0.0
 	github.com/juju/errors v0.0.0-20170703010042-c7d06af17c68
@@ -30,5 +30,3 @@ require (
 	gopkg.in/birkirb/loggers.v1 v1.1.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 )
-
-replace gopkg.in/russross/blackfriday.v2 v2.0.1 => github.com/russross/blackfriday/v2 v2.0.1

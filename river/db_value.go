@@ -118,5 +118,5 @@ func formatJson(result *mysql.Result, rowNo int, colNo int) (string, error) {
 		return "", errors.Trace(err)
 	}
 
-	return fmt.Sprintf("%s", val), nil
+	return fmt.Sprintf("'%s'", val), nil
 }
