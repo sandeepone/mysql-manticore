@@ -375,6 +375,7 @@ func parseSelectExpressions(queryAst *sqlparser.Select) (*SourceConfigDetails, e
 			}
 			cfg.docIDExpr = &fieldExpr.Expr
 		}
+
 		switch colType {
 		case
 			AttrFloat,

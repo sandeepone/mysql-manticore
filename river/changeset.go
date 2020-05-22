@@ -168,12 +168,14 @@ func (t *TableChangeSet) ChangedColumnNames() []string {
 			}
 		}
 	}
+
 	columns := make([]string, len(columnSet))
 	i := 0
 	for col := range columnSet {
 		columns[i] = col
 		i++
 	}
+
 	return columns
 }
 

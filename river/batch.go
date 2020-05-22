@@ -336,7 +336,7 @@ func fillQueryBatch(
 			q.delete = append(q.delete, id)
 		} else {
 			docAttrs := attrInfo.Attrs[id]
-
+			// fmt.Printf("\nDOCATTRS [%v] - [%v]\n", docAttrs, dataSource.details.attrFields)
 			if docAttrs.IsSubset(dataSource.details.attrFields) {
 				attrCount := docAttrs.Cardinality()
 				fields := make([]string, 0, attrCount)

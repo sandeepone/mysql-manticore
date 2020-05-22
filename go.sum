@@ -85,6 +85,8 @@ github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07 h1:oI+RNwuC9jF2g
 github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07/go.mod h1:yFdBgwXP24JziuRl2NMUahT7nGLNOKi1SIiFxMttVD4=
 github.com/siddontang/go-mysql v0.0.0-20200120044259-a9add8d89449 h1:rkJ1iiDvQmNRfCsJF8zNVlo0Lc3guLXBPCVhT28dsQI=
 github.com/siddontang/go-mysql v0.0.0-20200120044259-a9add8d89449/go.mod h1:+W4RCzesQDI11HvIkaDjS8yM36SpAnGNQ7jmTLn5BnU=
+github.com/siddontang/go-mysql v0.0.0-20200424072754-803944a6e4ea h1:B7BYAquq1gdE8aKAK6pnu66OUbG7ydil3DWqls+GuJU=
+github.com/siddontang/go-mysql v0.0.0-20200424072754-803944a6e4ea/go.mod h1:+W4RCzesQDI11HvIkaDjS8yM36SpAnGNQ7jmTLn5BnU=
 github.com/siddontang/loggers v1.0.4-0.20180516082531-fa51471f8169/go.mod h1:22jUdLiNuifMxKFmskmzVNGx0WdprmNctzWgn0KDrCU=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2 h1:SPIRibHv4MatM3XXNO2BJeFLZwZ2LvZgfQ5+UNI2im4=

@@ -19,7 +19,7 @@ require (
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726
 	github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07
-	github.com/siddontang/go-mysql v0.0.0-20200120044259-a9add8d89449
+	github.com/siddontang/go-mysql v0.0.0-20200424072754-803944a6e4ea
 	github.com/siddontang/loggers v1.0.4-0.20180516082531-fa51471f8169
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.4.0

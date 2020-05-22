@@ -2,6 +2,8 @@ package river
 
 import (
 	"encoding/json"
+	// "fmt"
+	"sort"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -234,6 +236,7 @@ func (r *IngestRule) makeUpdateChangeSet(e *canal.RowsEvent, idColNo int) ([]Tab
 	for i := 0; i < len(e.Rows)/2; i++ {
 		oldRow := e.Rows[i*2]
 		newRow := e.Rows[i*2+1]
+
 		oldDocID, err := util.CoerceToUint64(oldRow[idColNo])
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -268,6 +271,7 @@ func (r *IngestRule) makeDeleteChangeSet(e *canal.RowsEvent, idColNo int) ([]Tab
 	i := 0
 	columns := columnNames(e)
 	pkColumns := realPKColumns(e)
+
 	for _, row := range e.Rows {
 		docID, err := util.CoerceToUint64(row[idColNo])
 		if err != nil {
@@ -299,16 +303,27 @@ func (r *IngestRule) filterColumns(columns []string, row []interface{}) ([]strin
 			var obj map[string]interface{}
 			err := json.Unmarshal(data, &obj)
 			if err != nil {
+				// fmt.Printf("Unmarshal ERROR [%v]\n", err)
 				continue
 			}
 
-			for k, v := range obj {
-				// fmt.Printf("FilterColumns key[%s] value[%v]\n", k, v)
+			keys := make([]string, 0, len(obj))
+			for k := range obj {
+				keys = append(keys, k)
+			}
+
+			// sort the keys for old row and new row to be in same order
+			sort.Strings(keys)
+
+			// fmt.Printf("KEYS length: %d - %v\n", len(keys), keys)
+			for _, k := range keys {
+				// fmt.Printf("FilterColumns key[%v] - value[%v]\n", k, obj[k])
 
 				_, isIndexed := r.ColumnMap[k]
-				if isIndexed {
+				_, isOk := obj[k]
+				if isIndexed && isOk {
 					filteredColumns[i] = k
-					filteredRow[i] = v
+					filteredRow[i] = obj[k]
 					i++
 				}
 			}
@@ -347,6 +362,8 @@ func (r *IngestRule) updatedTableRow(docID uint64, pkCols []int, columns []strin
 	pk := newPrimaryKeyFromRow(pkCols, oldRow)
 	_, oldRow = r.filterColumns(columns, oldRow)
 	columns, newRow = r.filterColumns(columns, newRow)
+
+	// fmt.Printf("Old %v \nNew %v\n", oldRow, newRow)
 
 	return TableRowChange{
 		Action:    canal.UpdateAction,
@@ -390,7 +407,6 @@ func fieldIndex(e *canal.RowsEvent, fieldName string) (int, error) {
 }
 
 func isJsonRowTypeValid(e *canal.RowsEvent, typColNo, typColVal int) (bool, error) {
-
 	for _, row := range e.Rows {
 		typId, err := util.CoerceToUint32(row[typColNo])
 		if err != nil {
@@ -404,3 +420,16 @@ func isJsonRowTypeValid(e *canal.RowsEvent, typColNo, typColVal int) (bool, erro
 
 	return false, nil
 }
+
+// MapItem representation of one map item.
+type MapItem struct {
+	Key, Value interface{}
+	index      uint64
+}
+
+// MapSlice of map items.
+type MapSlice []MapItem
+
+func (ms MapSlice) Len() int           { return len(ms) }
+func (ms MapSlice) Less(i, j int) bool { return ms[i].index < ms[j].index }
+func (ms MapSlice) Swap(i, j int)      { ms[i], ms[j] = ms[j], ms[i] }
