@@ -111,7 +111,6 @@ func (h *eventHandler) OnGTID(gtid mysql.GTIDSet) error {
 }
 
 func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
-	// fmt.Printf("OnRow %v+ \n", e)
 	docCount, err := ApplyRuleSet(h.r.c.IngestRules, e, h.r.syncC)
 	stat := h.r.StatService
 	stat.lastRowEvent = time.Unix(int64(e.Header.Timestamp), 0)

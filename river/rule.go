@@ -2,7 +2,6 @@ package river
 
 import (
 	"encoding/json"
-	// "fmt"
 	"sort"
 	"time"
 
@@ -363,8 +362,6 @@ func (r *IngestRule) updatedTableRow(docID uint64, pkCols []int, columns []strin
 	_, oldRow = r.filterColumns(columns, oldRow)
 	columns, newRow = r.filterColumns(columns, newRow)
 
-	// fmt.Printf("Old %v \nNew %v\n", oldRow, newRow)
-
 	return TableRowChange{
 		Action:    canal.UpdateAction,
 		Columns:   columns,
@@ -420,16 +417,3 @@ func isJsonRowTypeValid(e *canal.RowsEvent, typColNo, typColVal int) (bool, erro
 
 	return false, nil
 }
-
-// MapItem representation of one map item.
-type MapItem struct {
-	Key, Value interface{}
-	index      uint64
-}
-
-// MapSlice of map items.
-type MapSlice []MapItem
-
-func (ms MapSlice) Len() int           { return len(ms) }
-func (ms MapSlice) Less(i, j int) bool { return ms[i].index < ms[j].index }
-func (ms MapSlice) Swap(i, j int)      { ms[i], ms[j] = ms[j], ms[i] }
