@@ -94,7 +94,7 @@ func formatMulti(result *mysql.Result, rowNo int, colNo int) (string, error) {
 		return "()", nil
 	}
 
-	// jsonCol value have brakets: ex[1,2]
+	// jsonCol value have brackets: ex[1,2]
 	val = strings.Trim(val, "[")
 	val = strings.Trim(val, "]")
 

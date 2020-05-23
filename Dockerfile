@@ -8,7 +8,7 @@ ADD . /go/src/github.com/sandeepone/mysql-manticore
 RUN cd /go/src/github.com/sandeepone/mysql-manticore \
  && COMMIT_SHA=$(git rev-parse --short HEAD) \
  && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w  \
-    -X main.version=0.7.0 \
+    -X main.version=0.7.1 \
     -X main.revision=${COMMIT_SHA}" \
     -a -tags netgo -installsuffix netgo -o mysql-manticore cmd/mysql-manticore/main.go
 
