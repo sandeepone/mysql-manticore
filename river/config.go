@@ -1,6 +1,7 @@
 package river
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -509,4 +510,14 @@ func columnSetFromSelectQuery(e *sqlparser.Select, tableMap map[string]string) (
 	}
 
 	return columnMap, nil
+}
+
+//BytesToString converts zero terminated byte array to string
+//Whole array is used when there is no zero in the string
+func BytesToString(b []byte) string {
+	n := bytes.IndexByte(b, 0)
+	if n == -1 {
+		n = len(b)
+	}
+	return string(b[:n])
 }

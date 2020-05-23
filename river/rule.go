@@ -2,6 +2,7 @@ package river
 
 import (
 	"encoding/json"
+	// "fmt"
 	"sort"
 	"time"
 
@@ -60,17 +61,21 @@ type IngestRule struct {
 
 func rowToArray(row []interface{}) [128]interface{} {
 	var m [128]interface{}
+
 	for colNo, value := range row {
 		m[colNo] = hashable(value)
 	}
+
 	return m
 }
 
 func columnNames(e *canal.RowsEvent) []string {
 	l := make([]string, len(e.Table.Columns))
+
 	for i, c := range e.Table.Columns {
 		l[i] = c.Name
 	}
+
 	return l
 }
 

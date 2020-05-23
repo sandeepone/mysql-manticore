@@ -1,6 +1,9 @@
 package river
 
 import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
 	"reflect"
 	"time"
 )
@@ -56,7 +59,23 @@ func (v ValuePair) HasSameValues() bool {
 	return reflect.DeepEqual(v.Old, v.New)
 }
 
+func GetBytes(key interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(key)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 func hashable(value interface{}) interface{} {
+	if _, ok := value.([]interface{}); ok {
+		if buf, err := GetBytes(value); err == nil {
+			return string(buf)
+		}
+	}
+
 	bytes, isByteSlice := value.([]uint8)
 	if isByteSlice {
 		return string(bytes)
