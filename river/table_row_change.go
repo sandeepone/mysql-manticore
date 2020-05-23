@@ -3,7 +3,6 @@ package river
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"reflect"
 	"time"
 )

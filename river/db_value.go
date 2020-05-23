@@ -2,6 +2,7 @@ package river
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/juju/errors"
 	"github.com/sandeepone/mysql-manticore/sphinx"
@@ -88,9 +89,14 @@ func formatMulti(result *mysql.Result, rowNo int, colNo int) (string, error) {
 		return "", errors.Trace(err)
 	}
 
+	// jsonCol empty value may be string null: ex 'null'
 	if val == "null" || val == "" {
 		return "()", nil
 	}
+
+	// jsonCol value have brakets: ex[1,2]
+	val = strings.Trim(val, "[")
+	val = strings.Trim(val, "]")
 
 	return fmt.Sprintf("(%s)", val), nil
 }
