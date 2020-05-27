@@ -14,7 +14,7 @@ require (
 	github.com/kr/pretty v0.1.0
 	github.com/kr/text v0.1.0
 	github.com/nats-io/nats.go v1.10.0
-	github.com/robfig/cron v1.2.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/sandeepone/sqlparser v0.0.0-20191206073631-108f7fcbf8a5
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
