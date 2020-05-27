@@ -203,7 +203,7 @@ func (c *SphConn) canRetry(err error) (bool, time.Duration) {
 
 func (c *SphConn) execute(stmt string) (*mysql.Result, error) {
 	addr := c.RemoteAddr().String()
-	log.Infof("[sphinx-query@%s] %s", addr, stmt)
+	log.Debugf("[sphinx-query@%s] %s", addr, stmt)
 	res, err := c.conn.Conn.Execute(stmt)
 	if err != nil {
 		log.Errorf("[sphinx-query@%s] [error] %s", addr, err)
@@ -213,9 +213,9 @@ func (c *SphConn) execute(stmt string) (*mysql.Result, error) {
 	} else {
 		c.attempts = 0
 		if strings.HasPrefix(strings.ToUpper(stmt), "SELECT") {
-			log.Infof("[sphinx-query@%s] [done] selected %d row(s)", addr, res.RowNumber())
+			log.Debugf("[sphinx-query@%s] [done] selected %d row(s)", addr, res.RowNumber())
 		} else {
-			log.Infof("[sphinx-query@%s] [done] %d affected row(s)", addr, res.AffectedRows)
+			log.Debugf("[sphinx-query@%s] [done] %d affected row(s)", addr, res.AffectedRows)
 		}
 	}
 	return res, err

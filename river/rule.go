@@ -2,7 +2,6 @@ package river
 
 import (
 	"encoding/json"
-	// "fmt"
 	"sort"
 	"time"
 
@@ -173,6 +172,8 @@ func (r *IngestRule) Apply(e *canal.RowsEvent) ([]TableRowChange, error) {
 // ApplyRuleSet converts row event to document changeset and sends to the channel c
 func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) (uint64, error) {
 	var docCount uint64
+	var ts = time.Now().UTC()
+
 	for ruleID := range ruleSet {
 		rule := ruleSet[ruleID]
 		docs, err := rule.Apply(e)
@@ -183,19 +184,20 @@ func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) 
 		// Log skipped event
 		if docs == nil && rule.JsonTypeValue > 0 {
 			log.Infof(
-				"[row event skipped] ruleId=%d index=%s table=%s type!=%d action=%s rows=%d",
+				"[row event skipped] ruleId=%d index=%s table=%s type!=%d action=%s rows=%d timeStamp=%s",
 				ruleID,
 				rule.Index,
 				e.Table,
 				rule.JsonTypeValue,
 				e.Action,
 				rowCount(e),
+				ts.String(),
 			)
 		}
 
 		if docs != nil {
 			log.Infof(
-				"[row event] ruleId=%d index=%s table=%s type=%d action=%s rows=%d docs=%v",
+				"[row event] ruleId=%d index=%s table=%s type=%d action=%s rows=%d docs=%v timeStamp=%s",
 				ruleID,
 				rule.Index,
 				e.Table,
@@ -203,10 +205,13 @@ func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) 
 				e.Action,
 				rowCount(e),
 				DocIDList(docs),
+				ts.String(),
 			)
 			for _, doc := range docs {
 				c <- doc
 				docCount++
+
+				PublishRowToNats(doc, rule)
 			}
 		}
 	}

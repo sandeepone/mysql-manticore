@@ -104,6 +104,9 @@ type Config struct {
 
 	StatAddr string `toml:"stat_addr"`
 
+	NatsEnabled bool   `toml:"nats_enabled"`
+	NatsAddr    string `toml:"nats_addr"`
+
 	ServerID        uint32       `toml:"server_id"`
 	Flavor          string       `toml:"flavor"`
 	HeartbeatPeriod TomlDuration `toml:"heartbeat_period"`
@@ -207,6 +210,12 @@ func NewConfig(data string) (*Config, error) {
 		if err = rule.check(c.DataSource); err != nil {
 			return nil, errors.Annotatef(err, "error in rule #%d for table '%s'", idx, rule.TableName)
 		}
+	}
+
+	// Nats publsiher support @Gleez
+	c.NatsAddr = os.ExpandEnv(c.NatsAddr)
+	if len(c.NatsAddr) > 2 {
+		c.NatsEnabled = true
 	}
 
 	c.applyDefaults()

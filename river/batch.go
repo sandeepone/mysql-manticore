@@ -6,8 +6,10 @@ import (
 
 	set "github.com/deckarep/golang-set"
 	"github.com/juju/errors"
+
 	"github.com/sandeepone/mysql-manticore/util"
 	"github.com/siddontang/go-mysql/mysql"
+
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
@@ -84,7 +86,7 @@ func (r *River) doBatch(batch BatchedChangeSet) error {
 	}
 
 	for index, indexChanges := range batch.Changes {
-		log.Infof("[batch] index=%s doc_ids=%v", index, docIDList(indexChanges))
+		log.Debugf("[batch] index=%s doc_ids=%v", index, docIDList(indexChanges))
 		if err := r.doIndexChangeSet(&indexChanges); err != nil {
 			return err
 		}
@@ -103,19 +105,19 @@ func (r *River) doIndexChangeSet(ics *IndexChangeSet) error {
 	attrChangeInfo := ics.ChangedAttrsByDocID()
 
 	if len(attrChangeInfo.ChangedDocIDs) == 0 {
-		log.Infof("[batch] index=%s no changed documents", ics.Index)
+		log.Debugf("[batch] index=%s no changed documents", ics.Index)
 		return nil
 	}
 
 	if len(attrChangeInfo.UnchangedDocIDs) > 0 {
-		log.Infof("[batch] index=%s unchanged_doc_ids=%v", ics.Index, attrChangeInfo.UnchangedDocIDs)
+		log.Debugf("[batch] index=%s unchanged_doc_ids=%v", ics.Index, attrChangeInfo.UnchangedDocIDs)
 	}
 
 	query, err := buildSelectQuery(dataSource.details.queryTpl, attrChangeInfo.ChangedDocIDs)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	log.Infof("[query] %s", query)
+	log.Debugf("[query] %s", query)
 
 	result, err := r.canal.Execute(query)
 	if err != nil {

@@ -18,7 +18,7 @@ import (
 	"gopkg.in/birkirb/loggers.v1/log"
 )
 
-// River is (actually, was) a pluggable service within Elasticsearch that pulls data from an external source.
+// River is (actually, was) a pluggable service within Manticoresearch that pulls data from an external source.
 // https://www.elastic.co/blog/the-river
 // https://www.elastic.co/blog/deprecating-rivers
 // We use this definition here for brevity, although this service obviously does not run within Elasticsearch.
@@ -59,6 +59,7 @@ type River struct {
 	cronToken   *suture.ServiceToken
 	syncToken   *suture.ServiceToken
 	canalToken  *suture.ServiceToken
+	natsToken   *suture.ServiceToken
 
 	syncM sync.Mutex
 }
@@ -71,7 +72,6 @@ const canalServiceStopTimeout = 10 * time.Second
 const cronServiceStopTimeout = 10 * time.Second
 const sphinxServiceStopTimeout = 10 * time.Second
 const syncServiceStopTimeout = 30 * time.Second
-const switchBuildModeTimeout = 5 * time.Second
 
 // NewRiver creates the River from config
 func NewRiver(c *Config, log loggers.Contextual) (*River, error) {
@@ -226,6 +226,11 @@ func (r *River) run() error {
 		r.cronToken = &t
 	}
 
+	if r.natsToken == nil && r.c.NatsEnabled {
+		t := r.sup.Add(NewNatsService(r))
+		r.natsToken = &t
+	}
+
 	r.startSyncRoutine()
 
 	return nil
@@ -259,6 +264,14 @@ func (r *River) Stop() {
 			r.l.Errorf("SphinxService failed to stop after waiting for %s", sphinxServiceStopTimeout)
 		}
 		r.sphinxToken = nil
+	}
+
+	if r.natsToken != nil {
+		err := r.sup.RemoveAndWait(*r.natsToken, syncServiceStopTimeout)
+		if err != nil {
+			r.l.Errorf("NatsService failed to stop after waiting for %s", syncServiceStopTimeout)
+		}
+		r.natsToken = nil
 	}
 
 	r.sup.Stop()
