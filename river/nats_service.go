@@ -3,6 +3,7 @@ package river
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,6 +17,9 @@ var sync2Nats = make(chan *Message, 4096)
 type Message struct {
 	// Id is an unique identifier of action.
 	Id uint64
+
+	// Type id of the event
+	Type uint32
 
 	// event name: users/posts/comments etc
 	Name string
@@ -43,6 +47,8 @@ type NatsService struct {
 	riverInstance *River
 	sphm          sync.Mutex
 	wg            sync.WaitGroup
+
+	seq uint64
 
 	// NATS connection types
 	nc *nats.Conn
@@ -83,8 +89,9 @@ func (s *NatsService) SyncLoop(ctx context.Context) {
 
 	for {
 		if s.ec == nil {
+			s.log.Debug("SyncLoop Nats not connected, so drain channel")
 			<-sync2Nats
-			break
+			continue
 		}
 
 		select {
@@ -93,8 +100,13 @@ func (s *NatsService) SyncLoop(ctx context.Context) {
 		case <-s.ctx.Done():
 			s.log.Info("SyncLoop Closed")
 			break
+		default:
+			s.log.Debug("SyncLoop No activity")
 		}
 	}
+
+	close(sync2Nats)
+	s.log.Info("SyncLoop exited")
 }
 
 func (s *NatsService) Publish(v *Message) {
@@ -102,11 +114,19 @@ func (s *NatsService) Publish(v *Message) {
 		return
 	}
 
-	sub := fmt.Sprintf("binlog.%s.%s", v.Name, v.Action)
-	s.log.Debugf("Publishing event %s: %d", sub, v.Id)
+	cfg := s.riverInstance.c
+	typ := strconv.FormatUint(uint64(v.Type), 10)
+
+	// try to get name from tao map
+	if name, ok := cfg.TaoMap[typ]; ok {
+		v.Name = name
+	}
+
+	sub := fmt.Sprintf("binlog.%s.%s.%d", v.Name, v.Action, s.nextSeqNo())
+	s.log.Infof("Publishing event [%s] for [%d]", sub, v.Id)
 
 	if err := s.ec.Publish(sub, v); err != nil {
-		s.log.Errorf("Error publishing event %d: %v", v.Id, err)
+		s.log.Errorf("Error publishing event [%s] for [%d]: %v", sub, v.Id, err)
 	}
 
 	// // Sends a PING and wait for a PONG from the server, up to the given timeout.
@@ -121,6 +141,12 @@ func NewNatsService(r *River) *NatsService {
 	s := NatsService{riverInstance: r}
 	s.log = r.Log.WithFields("service", s.String())
 	return &s
+}
+
+func (s *NatsService) nextSeqNo() uint64 {
+	s.seq++
+
+	return s.seq
 }
 
 func (s *NatsService) connect() {
@@ -192,11 +218,23 @@ func NewMessage(id uint64) *Message {
 	}
 }
 
-func PublishRowToNats(doc TableRowChange, rule IngestRule) {
+func PublishRowToNats(id uint64, typ uint32, action string, table string) {
+	ev := NewMessage(id)
+	ev.Type = typ
+	ev.Name = table
+	ev.Action = action
+	ev.Metadata["tableName"] = table
+
+	sync2Nats <- ev
+}
+
+func PublishDocToNats(doc TableRowChange, rule IngestRule) {
 	ev := NewMessage(doc.DocID)
-	ev.Name = doc.Index
+	ev.Type = uint32(rule.JsonTypeValue)
+	ev.Name = doc.TableName
 	ev.Action = doc.Action
 
+	ev.Metadata["index"] = doc.Index
 	ev.Metadata["tableName"] = doc.TableName
 	ev.Metadata["timeStamp"] = doc.TS.String()
 

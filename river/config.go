@@ -104,8 +104,8 @@ type Config struct {
 
 	StatAddr string `toml:"stat_addr"`
 
-	NatsEnabled bool   `toml:"nats_enabled"`
 	NatsAddr    string `toml:"nats_addr"`
+	NatsEnabled bool   `toml:"nats_enabled"`
 
 	ServerID        uint32       `toml:"server_id"`
 	Flavor          string       `toml:"flavor"`
@@ -135,6 +135,8 @@ type Config struct {
 	SkipRebuild       bool `toml:"skip_rebuild"`
 	SkipUploadIndex   bool `toml:"skip_upload_index"`
 	SkipReloadRtIndex bool `toml:"skip_reload_rt_index"`
+
+	TaoMap map[string]string `toml:"tao_type"`
 }
 
 // IndexConfigField field of an index as it's seen in the indexer config

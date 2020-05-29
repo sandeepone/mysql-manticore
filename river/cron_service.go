@@ -33,7 +33,7 @@ func (s *CronService) Serve() {
 
 	s.cron = cron.New(
 		cron.WithSeconds(),
-		cron.WithLogger(cron.VerbosePrintfLogger(stdLogger)),
+		cron.WithLogger(cron.PrintfLogger(stdLogger)),
 	)
 
 	cfg := s.riverInstance.c.MaintenanceConfig

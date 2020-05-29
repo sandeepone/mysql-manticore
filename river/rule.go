@@ -30,8 +30,8 @@ type IngestRule struct {
 	Index          string              `toml:"index"`
 	ColumnMap      map[string][]string `toml:"column_map"`
 	JsonColumnName string              `toml:"json_column_name"`
-	JsonTypeName   string              `toml:"json_type_name"`  // optional used for tao_objects type column ex: user or post or comment
-	JsonTypeValue  int                 `toml:"json_type_value"` // optional used for tao_objects type column ex: 1 or 3 or 4
+	JsonTypeName   string              `toml:"json_type_name"`  // optional used for tao_objects type column name ex: type
+	JsonTypeValue  int                 `toml:"json_type_value"` // optional used for tao_objects type column value ex: 1 or 3 or 4
 	timeProvider   func() time.Time
 
 	// MySQL table information
@@ -158,6 +158,7 @@ func (r *IngestRule) Apply(e *canal.RowsEvent) ([]TableRowChange, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+
 	switch e.Action {
 	case canal.InsertAction:
 		return r.makeInsertChangeSet(e, idColNo)
@@ -172,7 +173,9 @@ func (r *IngestRule) Apply(e *canal.RowsEvent) ([]TableRowChange, error) {
 // ApplyRuleSet converts row event to document changeset and sends to the channel c
 func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) (uint64, error) {
 	var docCount uint64
-	var ts = time.Now().UTC()
+
+	// Publish Minimal Row Event - without payload
+	processRowEventForNats(e)
 
 	for ruleID := range ruleSet {
 		rule := ruleSet[ruleID]
@@ -181,23 +184,9 @@ func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) 
 			return docCount, errors.Trace(err)
 		}
 
-		// Log skipped event
-		if docs == nil && rule.JsonTypeValue > 0 {
-			log.Infof(
-				"[row event skipped] ruleId=%d index=%s table=%s type!=%d action=%s rows=%d timeStamp=%s",
-				ruleID,
-				rule.Index,
-				e.Table,
-				rule.JsonTypeValue,
-				e.Action,
-				rowCount(e),
-				ts.String(),
-			)
-		}
-
 		if docs != nil {
 			log.Infof(
-				"[row event] ruleId=%d index=%s table=%s type=%d action=%s rows=%d docs=%v timeStamp=%s",
+				"[rule event] ruleId=%d index=%s table=%s type=%d action=%s rows=%d docs=%v",
 				ruleID,
 				rule.Index,
 				e.Table,
@@ -205,13 +194,12 @@ func ApplyRuleSet(ruleSet []IngestRule, e *canal.RowsEvent, c chan interface{}) 
 				e.Action,
 				rowCount(e),
 				DocIDList(docs),
-				ts.String(),
 			)
+
 			for _, doc := range docs {
 				c <- doc
 				docCount++
-
-				PublishRowToNats(doc, rule)
+				// PublishDocToNats(doc, rule)
 			}
 		}
 	}
@@ -426,4 +414,50 @@ func isJsonRowTypeValid(e *canal.RowsEvent, typColNo, typColVal int) (bool, erro
 	}
 
 	return false, nil
+}
+
+func processRowEventForNats(e *canal.RowsEvent) {
+	idColNo, _ := fieldIndex(e, "id")
+	typColNo, _ := fieldIndex(e, "type")
+
+	if e.Action == "update" {
+		for i := 0; i < len(e.Rows)/2; i++ {
+			var id uint64
+			var typ uint32
+			newRow := e.Rows[i*2+1]
+
+			if idColNo >= 0 {
+				id, _ = util.CoerceToUint64(newRow[idColNo])
+			}
+
+			if typColNo >= 0 {
+				typ, _ = util.CoerceToUint32(newRow[typColNo])
+			}
+
+			if id > 0 && typ > 0 {
+				PublishRowToNats(id, typ, e.Action, e.Table.String())
+				log.Debugf("[row event] table=%s type=%d action=%s id=%d", e.Table, typ, e.Action, id)
+			}
+		}
+	}
+
+	if e.Action == "insert" || e.Action == "delete" {
+		for _, row := range e.Rows {
+			var id uint64
+			var typ uint32
+
+			if idColNo >= 0 {
+				id, _ = util.CoerceToUint64(row[idColNo])
+			}
+
+			if typColNo >= 0 {
+				typ, _ = util.CoerceToUint32(row[typColNo])
+			}
+
+			if id > 0 && typ > 0 {
+				PublishRowToNats(id, typ, e.Action, e.Table.String())
+				log.Debugf("[row event] table=%s type=%d action=%s id=%d", e.Table, typ, e.Action, id)
+			}
+		}
+	}
 }

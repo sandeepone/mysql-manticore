@@ -226,7 +226,7 @@ func (r *River) run() error {
 		r.cronToken = &t
 	}
 
-	if r.natsToken == nil && r.c.NatsEnabled {
+	if r.natsToken == nil {
 		t := r.sup.Add(NewNatsService(r))
 		r.natsToken = &t
 	}

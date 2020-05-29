@@ -300,7 +300,7 @@ func (c *SphConn) reconnect() error {
 	}
 
 	// addr := c.RemoteAddr().String()
-	log.Infof("[sphinx-reconnect] %s", c.addr)
+	log.Debugf("[sphinx-reconnect] %s", c.addr)
 	conn, err := client.Connect(c.addr, "", "", "")
 	if err != nil {
 		return errors.Trace(err)
